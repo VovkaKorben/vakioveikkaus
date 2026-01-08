@@ -1,0 +1,58 @@
+.chance-table {
+  width: 100%;
+  max-width: 600px;
+  /* border-collapse: separate; */
+  border-collapse: collapse;
+
+  border-spacing: 0;
+  font-family: sans-serif;
+  margin: 20px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  /* Чтобы скруглить углы */
+}
+
+.chance-table th {
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  padding: 12px;
+  text-align: center;
+  /* border-bottom: 2px solid #dee2e6; */
+  border: 1px solid #dee2e6;
+}
+
+/* Стили ячеек матчей */
+.chance-table td {
+  padding: 10px;
+  text-align: center;
+  /* border-bottom: 1px solid #eee; */
+  border: 1px solid #dee2e6;
+  transition: background-color 0.2s;
+}
+
+/* Подсветка строки при наведении для удобства 13 игр */
+.chance-table tr:hover td {
+  background-color: #f1f7ff;
+}
+
+/* Убираем нижнюю границу у последней строки */
+.chance-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Стиль для инпутов внутри таблицы */
+.chance-table input {
+  width: 50px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+  outline: none;
+}
+
+.chance-table input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
