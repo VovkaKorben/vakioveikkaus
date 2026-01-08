@@ -2,7 +2,7 @@ import React from "react";
 
 
 
-const Btn = ({ onClick, caption = "Default",icon }) => {
+const Btn = ({ className, onClick, caption = "", pressed, ...props }) => {
 
 
 
@@ -13,14 +13,14 @@ const Btn = ({ onClick, caption = "Default",icon }) => {
     };
 
     return (
-        <button 
-            className=""
+        <button
+
             onClick={handleClick}
-            
+            className={`default-btn-class ${className}`}
+            {...props}
         >
-            {icon && <img className="mr_small" src={`/icons/${icon}.svg`} />}
-            {/* {if (icon) <img src='/icons/course.svg' />} */}
             {caption}
+
         </button>
 
     );
