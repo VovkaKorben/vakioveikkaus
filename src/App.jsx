@@ -66,12 +66,20 @@ const InputTable = ({ rows, rowsChanged }) => {
           <td>team*team</td>
 
 
+
+
           {[0, 1, 2].map((i) => (
             <td key={i}>
-              {v.state
-                ? <TextInput value={v.edits[i]} />
-                : <Btn className="mode-button" pressed={v.buttons[i]} />
-              }
+              <label for="cowbell">Cowbell</label>
+              <input
+                type="range"
+                id="cowbell"
+                name="cowbell"
+                min="0"
+                max="100"
+                value="90"
+                step="10" />
+
             </td>
           ))}
 
