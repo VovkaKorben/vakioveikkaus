@@ -1,0 +1,70 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CalcDev",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "${workspaceFolder}/calc",
+      "console": "integratedTerminal",
+    },
+    {
+      "name": "Calc",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [ "index.js" ],
+      "cwd": "${workspaceFolder}/calc",
+      "console": "integratedTerminal",
+    },
+    {
+      "name": "Backend (npm run dev)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "${workspaceFolder}/backend",
+      "console": "integratedTerminal",
+      "preLaunchTask": "clearConsole"
+    },
+    {
+      "name": "Frontend (npm run dev)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "clearConsole"
+    },
+    {
+      "name": "Browser Start",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "run ALL",
+      "configurations": [
+        "Backend (npm run dev)",
+        "Frontend (npm run dev)",
+        "Browser Start"
+      ],
+      "stopAll": true
+    }
+  ]
+}

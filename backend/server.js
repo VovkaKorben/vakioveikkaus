@@ -44,11 +44,10 @@ mongoose
 
 // MODELS -------------------------------------------------
 const GameSchema = new mongoose.Schema({
-  rows: [{
-    state: { type: Number, default: 0 },
-    edits: { type: [Number], default: [0, 0, 0] },
-    buttons: { type: [Number], default: [0, 0, 0] }
-  }],
+  values: {
+    type: [[Number]],
+    default: Array.from({ length: 13 }, () => [100, 0, 0])
+  },
   lastUpdated: { type: Date, default: Date.now }
 });
 
@@ -60,32 +59,24 @@ const GameModel = mongoose.model("Game", GameSchema);
 app.get('/api/game', async (req, res) => {
   try {
     const data = await GameModel.findOne();
-    // Если в базе пусто, отдаем дефолтные пустые массивы
-    if (!data) {
-      return res.json({
-        rowMode: new Array(13).fill(0),
-        buttonStatus: Array.from({ length: 13 }, () => [0, 0, 0]),
-        editValues: Array.from({ length: 13 }, () => [0, 0, 0]),
-        results: []
-      });
-    }
-    res.json(data);
+    res.json(data.values);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 // 3. Эндпоинт для сохранения (POST)
 app.post('/api/game', async (req, res) => {
+  // console.log('Данные с фронта:', req.body); // <-- Добавь это
   try {
     const updateData = { ...req.body, lastUpdated: new Date() };
-    await GameModel.findOneAndUpdate({}, updateData, { upsert: true });
+    await GameModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
     res.status(200).json({ message: "Успешно сохранено в Atlas" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.use(notFound); 
+app.use(notFound);
 app.use(errorHandler);
 
 

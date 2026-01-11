@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react'
 import TextInput from './TextInput.jsx'
-import Btn from './Btn.jsx'
+import Slider from './Slider.jsx'
 import './App.css'
+import { prettify } from './debug.js'
 const API_ROUTE = 'http://localhost:3500/api/game';
-const rowsDefault = Array.from({ length: 13 }, () => ({
-  state: 0,
-  edits: [0, 0, 0],
-  buttons: [0, 0, 0]
-}));
+const valuesDefault = Array.from({ length: 13 }, () => ([0, 0, 0]));
 const checkDefaults = (template, target) => {
   // 1. Если типы не совпадают или данных нет — возвращаем шаблон
   if (typeof template !== typeof target || target === null || target === undefined) {
@@ -37,61 +34,57 @@ const checkDefaults = (template, target) => {
   // 4. Если это примитив (число 0 или 1), возвращаем само значение
   return target;
 };
-const InputTable = ({ rows, rowsChanged }) => {
+
+const InputTable = ({ values, valuesChanged }) => {
 
 
-  const triggerState = (row_index) => {
-    rowsChanged(
-      rows.map((v, i) => {
-        return i === row_index ? { ...v, state: v.state ^ 1 } : v;
-      })
-    )
+  const handleSliderChange = (rowIndex, colIndex, newValue) => {
+    const newValues = values.map((row, i) => i === rowIndex ? calcRow(row, colIndex, newValue) : row);
+    valuesChanged(newValues);
   }
 
-  return (<table className='chance-table'>
-    <thead>
-      <tr key='header'>
-        <th>#</th>
-        <th>Teams</th>
-        <th>1</th>
-        <th>X</th>
-        <th>2</th>
-        <th></th>
-        <th></th>
-      </tr></thead>
-    <tbody>
-      {rows.map((v, x) =>
-        <tr key={x} className={v.state ? 'row-edit' : 'row-button'}>
-          <td>{x + 1}</td>
-          <td>team*team</td>
+  const handleClear = () => {
+    const newValues = values.map((row, i) => i === rowIndex ? calcRow(row, colIndex, newValue) : row);
+    valuesChanged(newValues);
+  }
+  return (
+
+    <div className="betting-container">
+      <div className="card-wrapper">
+
+        <div className="nav-tabs-container">
+          <button className="btn-tab" onClick={handleClear}>Clear</button>
+          <button className="btn-tab btn-tab">Random</button>
+          <button className="btn-tab btn-tab--active">Evaluate</button>
+        </div>
+        {/* each 13 rows */}
+        {values.map((v, rowIndex) =>
+
+          <div key={rowIndex} className="match-row match-row--active">
+            <div className="match-number-badge">{rowIndex + 1}</div>
+            <div className="match-teams">Manchester C - Newcastle U</div>
+            <div className="selection-group">
+
+              {/* buttons 1 X 2 */}
+              {[...'1X2'].map((char, colIndex) => (
+
+                <button
+                  key={`r${rowIndex}_c${colIndex}`}
+                  className={`btn-outcome ${v[colIndex] ? 'btn-outcome--selected' : ''}`}
+                  onClick={() => handleSliderChange(rowIndex, colIndex)}
+                >
+                  {char}
+                </button>
+              ))}
 
 
+              {/* onChange={(newValue) => handleSliderChange(rowIndex, colIndex, newValue)} */}
+            </div>
+          </div>
+        )}
 
-
-          {[0, 1, 2].map((i) => (
-            <td key={i}>
-              <label for="cowbell">Cowbell</label>
-              <input
-                type="range"
-                id="cowbell"
-                name="cowbell"
-                min="0"
-                max="100"
-                value="90"
-                step="10" />
-
-            </td>
-          ))}
-
-
-          <td><Btn
-            caption={v.state ? 'Buttons' : 'Inputs'}
-            onClick={() => triggerState(x)}
-            className="mode-button"
-          /></td>
-          <td></td>
-        </tr>)}
-    </tbody></table>
+      </div>
+    </div >
   )
 }
 
@@ -99,16 +92,18 @@ const InputTable = ({ rows, rowsChanged }) => {
 
 function App() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [rows, setRows] = useState(rowsDefault);
+  const [values, setValues] = useState(valuesDefault);
 
   // LOAD CHANCES FROM DB -------------------------------------
   useEffect(() => {
     fetch(API_ROUTE)
       .then(res => res.json())
       .then(data => {
-        const verified = checkDefaults(rowsDefault, data.rows);
-        setRows(verified);
+        const verified = checkDefaults(valuesDefault, data);
+        // const normalized = verified.map((row) => calcRow(row, 0, row[0]));
+        setValues(verified);
         setIsLoaded(true);
+        // console.log(`data loaded: ${prettify(verified, 0)}`);
       })
       .catch(err => console.error("Ошибка загрузки:", err));
   }, []);
@@ -116,24 +111,25 @@ function App() {
   // SAVE CHANCES TO DB -------------------------------------
   useEffect(() => {
     if (!isLoaded) return;
-    const saveRows = async () => {
+
+    const timeoutId = setTimeout(async () => {
       try {
         await fetch(API_ROUTE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rows }) // Отправляем всю пачку rows
+          body: JSON.stringify({ values }) // Отправляем всю пачку rows
         });
-        console.log("Хозяин, всё сохранено!");
+        //   console.log("Хозяин, всё сохранено!");
       } catch (err) {
         console.error("Ошибка сохранения:", err);
       }
-    };
-    saveRows();
-  }, [rows, isLoaded]);
+    }, 500); // Задержка 500 мс (полсекунды)
+    return () => clearTimeout(timeoutId);
+  }, [values, isLoaded]);
 
 
-  const handleRowsChanged = (value) => {
-    setRows(value);
+  const handleValuesChanged = (values) => {
+    setValues(values);
   }
 
 
@@ -143,8 +139,9 @@ function App() {
   return (
 
     isLoaded
-      ? <InputTable rows={rows} rowsChanged={handleRowsChanged} />
+      ? <InputTable values={values} valuesChanged={handleValuesChanged} />
       : 'Loading...'
+
 
 
   )

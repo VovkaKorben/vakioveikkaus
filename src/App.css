@@ -1,116 +1,115 @@
-.chance-table {
-  width: 100%;
-  max-width: 600px;
-  /* border-collapse: separate; */
-  border-collapse: collapse;
+/* Основные цвета и шрифты */
+:root {
+  --main-green: #008246;
+  --light-bg: #f4f4f4;
+  --white: #ffffff;
+  --gray-border: #e0e0e0;
+  --text-dark: #333333;
+  --text-muted: #666666;
+}
 
-  border-spacing: 0;
-  font-family: sans-serif;
-  margin: 20px 0;
-  border: 1px solid #e0e0e0;
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--light-bg);
+  padding: 20px;
+}
+
+/* Контейнеры */
+.betting-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.card-wrapper {
+  background: var(--white);
   border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  /* Чтобы скруглить углы */
+  padding: 15px;
 }
 
-.chance-table th {
-  background-color: #f8f9fa;
-  color: #333;
-  font-weight: 600;
-  padding: 12px;
-  text-align: center;
-  /* border-bottom: 2px solid #dee2e6; */
-  border: 1px solid #dee2e6;
+/* Навигация */
+.nav-tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--gray-border);
+  padding-bottom: 15px;
 }
 
-/* Стили ячеек матчей */
-.chance-table td {
-  padding: 10px;
-  text-align: center;
-  /* border-bottom: 1px solid #eee; */
-  border: 1px solid #dee2e6;
-  transition: background-color 0.2s;
-}
-
-
-
-/* Убираем нижнюю границу у последней строки */
-.chance-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* Стиль для инпутов внутри таблицы */
-.chance-table input {
-  width: 65px;
-  /* Унифицированная ширина */
-  height: 30px;
-  /* Фиксированная высота */
-  box-sizing: border-box;
-  /* Чтобы padding не раздувал размер */
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  text-align: center;
-  outline: none;
-}
-
-.chance-table input:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-
-/* Кнопка, замаскированная под инпут */
-.chance-table .mode-button {
-  width: 65px;
-  /* Такая же, как у инпута */
-  height: 30px;
-  /* Такая же, как у инпута */
-  box-sizing: border-box;
-  /* Чтобы padding не раздувал размер */
-  padding: 5px;
-  background-color: #ffffff;
-  /* Белый фон как у инпута */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  text-align: center;
-  font-family: inherit;
-  font-size: 13px;
+.btn-tab {
+  padding: 8px 16px;
+  border: 1px solid var(--gray-border);
+  border-radius: 20px;
+  background: white;
+  color: var(--text-dark);
   cursor: pointer;
-  /* Чтобы было понятно, что на неё можно нажать */
-  transition: all 0.2s;
-  outline: none;
+  font-weight: 500;
 }
 
-/* Эффект при наведении — чтобы она всё-таки «оживала» */
-.chance-table .mode-button:hover {
-  background-color: #f0f0f0;
-  border-color: #bbb;
+.btn-tab--active {
+  background-color: var(--main-green);
+  color: white;
+  border-color: var(--main-green);
 }
 
-/* Эффект при нажатии — как фокус у инпута */
-.chance-table .mode-button:active {
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+/* Строки матчей */
+.match-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 10px;
+  border-bottom: 1px solid #f9f9f9;
+  gap: 15px;
 }
 
-.chance-table tr {
-  transition: background-color 300ms ease;
-
+.match-number-badge {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  background: #f0f0f0;
+  color: var(--text-muted);
 }
 
-tr.row-edit {
-  background-color: #ff000034;
+/* Состояние активной строки (номер закрашен) */
+.match-row--active .match-number-badge {
+  background-color: #c8e6c9;
+  /* Светло-зеленый фон кружка */
+  color: var(--main-green);
+  /* Зеленая цифра */
+  font-weight: bold;
 }
 
-tr.row-edit:hover {
-  background-color: #ff000044;
+.match-teams {
+  flex-grow: 1;
+  font-size: 15px;
+  color: var(--text-dark);
 }
 
-tr.row-button {
-  background-color: #0000ff1e;
+/* Кнопки выбора и статистики */
+.selection-group {
+  display: flex;
+  gap: 5px;
 }
 
-tr.row-button:hover {
-  background-color: #0000ff2e;
+.btn-outcome {
+  width: 40px;
+  height: 35px;
+  border: 1px solid var(--gray-border);
+  background: #fcfcfc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
 }
+
+.btn-outcome--selected {
+  background-color: var(--main-green);
+  color: white;
+  border-color: var(--main-green);
+}
+
