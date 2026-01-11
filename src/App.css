@@ -53,6 +53,49 @@ body {
   border-color: var(--main-green);
 }
 
+
+
+/* Состояния для кнопок навигации */
+
+/* Эффект при наведении */
+.btn-tab:hover:not(:disabled):not(.btn-tab--active) {
+  background-color: #f0f7f3;
+  /* Очень легкий зеленый оттенок */
+  border-color: var(--main-green);
+  color: var(--main-green);
+}
+
+/* Эффект при нажатии (активная кнопка не меняется) */
+.btn-tab:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Состояние Disabled */
+.btn-tab:disabled {
+  background-color: #f9f9f9;
+  border-color: var(--gray-border);
+  color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+  /* Убираем тень или другие эффекты, если они были */
+  box-shadow: none;
+}
+
+/* Чтобы активная кнопка не реагировала на ховер как обычная */
+.btn-tab--active:hover {
+  cursor: default;
+  opacity: 0.9;
+}
+
+
+
+
+
+
+
+
+
+
 /* Строки матчей */
 .match-row {
   display: flex;
@@ -112,4 +155,3 @@ body {
   color: white;
   border-color: var(--main-green);
 }
-

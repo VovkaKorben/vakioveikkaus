@@ -46,13 +46,17 @@ mongoose
 const GameSchema = new mongoose.Schema({
   values: {
     type: [[Number]],
-    default: Array.from({ length: 13 }, () => [100, 0, 0])
+    default: Array.from({ length: 13 }, () => [0, 0, 0])
   },
   lastUpdated: { type: Date, default: Date.now }
 });
-
 const GameModel = mongoose.model("Game", GameSchema);
 
+const ResultSchema = new mongoose.Schema({
+  values: { type: [[Number]], required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const ResultModel = mongoose.model("Result", ResultSchema);
 
 // ROUTES -------------------------------------------------
 // 2. Эндпоинт для загрузки (GET)
@@ -66,11 +70,33 @@ app.get('/api/game', async (req, res) => {
 });
 // 3. Эндпоинт для сохранения (POST)
 app.post('/api/game', async (req, res) => {
-  // console.log('Данные с фронта:', req.body); // <-- Добавь это
   try {
     const updateData = { ...req.body, lastUpdated: new Date() };
     await GameModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
     res.status(200).json({ message: "Успешно сохранено в Atlas" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+app.post('/api/calc', async (req, res) => {
+  try {
+    const data = req.body.values;
+    // console.log(data);
+    return res.status(200).json({ message: "test" });
+
+    if (data === null) {
+      await ResultModel.deleteMany({}); // Стираем все записи в коллекции результатов
+      return res.status(200).json({ message: "Таблица результатов успешно очищена" });
+    }
+    const calculationResult = calc(data);
+    await ResultModel.findOneAndUpdate(
+      { rows: calculationResult, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+    res.status(200).json(calculationResult);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

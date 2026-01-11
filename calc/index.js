@@ -16,6 +16,21 @@ const calc_new = ({ row, colIndex, newValue }) => {
     row[colIndex] = newVal;
     return row;
 }
+/*
+console.log(calc_new({ row: [50, 30, 20], colIndex: 0, newValue: 70 }));
+console.log(calc_new({ row: [70, 20, 10], colIndex: 0, newValue: 84 }));
+console.log(calc_new({ row: [100, 0, 0], colIndex: 0, newValue: 70 }));
+console.log(calc_new({ row: [50, 30, 20], colIndex: 0, newValue: 100 }));
+console.log(calc_new({ row: [0, 0, 100], colIndex: 0, newValue: 70 }));
+console.log(calc_new({ row: [0, 0, 100], colIndex: 0, newValue: 100 }));
+console.log(calc_new({ row: [0, 0, 100], colIndex: 0, newValue: 50 }));
+console.log(calc_new({ row: [50, 50, 0], colIndex: 0, newValue: 20 }));
+console.log(calc_new({ row: [100, 0, 0], colIndex: 0, newValue: 80 }));
+console.log(calc_new({ row: [99, 1, 0], colIndex: 0, newValue: 80 })); 
+console.log(calc_new({ row: [50, 25, 25], colIndex: 0, newValue: 51 }));
+console.log(calc_new({ row: [99, 1, 0], colIndex: 0, newValue: 80 }));
+console.log(calc_new({ row: [1, 1, 98], colIndex: 2, newValue: 99 }));
+*/
 
 const EPSILON = 0.000001; // или Number.EPSILON
 const isGreaterOrEqual = (a, b) => a > b - EPSILON;
@@ -56,25 +71,33 @@ const getBGcolor = (v) => {
 }
 
 
-for (let x = 0; x <= 100; x += 2)
+/*for (let x = 0; x <= 100; x += 2)
     console.log(x, getBGcolor(x));
     // getBGcolor(x);
-
-
-
-
-/*
-console.log(calc_new({ row: [50, 30, 20], colIndex: 0, newValue: 70 }));
-console.log(calc_new({ row: [70, 20, 10], colIndex: 0, newValue: 84 }));
-console.log(calc_new({ row: [100, 0, 0], colIndex: 0, newValue: 70 }));
-console.log(calc_new({ row: [50, 30, 20], colIndex: 0, newValue: 100 }));
-console.log(calc_new({ row: [0, 0, 100], colIndex: 0, newValue: 70 }));
-console.log(calc_new({ row: [0, 0, 100], colIndex: 0, newValue: 100 }));
-console.log(calc_new({ row: [0, 0, 100], colIndex: 0, newValue: 50 }));
-console.log(calc_new({ row: [50, 50, 0], colIndex: 0, newValue: 20 }));
-console.log(calc_new({ row: [100, 0, 0], colIndex: 0, newValue: 80 }));
-console.log(calc_new({ row: [99, 1, 0], colIndex: 0, newValue: 80 })); 
-console.log(calc_new({ row: [50, 25, 25], colIndex: 0, newValue: 51 }));
-console.log(calc_new({ row: [99, 1, 0], colIndex: 0, newValue: 80 }));
-console.log(calc_new({ row: [1, 1, 98], colIndex: 2, newValue: 99 }));
 */
+
+const calc = (data) => {
+
+    // calc probability ranges
+    const probabilities = [];
+    data.some((row) => {
+        const t = [];
+        const sum = row.reduce((a, b) => a + b, 0);
+        if (sum === 0) return true;
+        for (let s = 0; s < sum; s++) {
+            t.push(1 / sum * (s + 1));
+        }
+        probabilities.push(t);
+        return false;
+    });
+    const rows = []
+    // for (let rowIndex = 0; rowIndex < 128; rowIndex++) {    }
+
+    return rows;
+}
+
+const data = [
+    [0, 1, 0], [1, 1, 0], [0, 1, 1], [0, 1, 1], [1, 1, 1], [0, 0, 1],
+    [1, 0, 1], [0, 1, 1], [0, 1, 1], [1, 0, 0], [1, 0, 0], [1, 0, 1], [1, 1, 1]
+]
+calc(data);
