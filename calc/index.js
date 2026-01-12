@@ -35,6 +35,7 @@ console.log(calc_new({ row: [1, 1, 98], colIndex: 2, newValue: 99 }));
 const EPSILON = 0.000001; // или Number.EPSILON
 const isGreaterOrEqual = (a, b) => a > b - EPSILON;
 const isLessOrEqual = (a, b) => a < b + EPSILON;
+
 const RangeCoeff = (v, s, e) => (v - s) / (e - s);
 const RangeValue = (k, s, e) => (e - s) * k + s;
 const ClampByte = (v) => Math.round(Math.min(Math.max(v, 0), 255));
@@ -75,29 +76,65 @@ const getBGcolor = (v) => {
     console.log(x, getBGcolor(x));
     // getBGcolor(x);
 */
+const rowIsUnique = (newRow, allRows) => {
+    return allRows.every((row) => {
+        // verify row
+        const rowsEqual = row.every((v, i) => v === newRow[i]);
+        return !rowsEqual;
+    })
+}
 
 const calc = (data) => {
 
     // calc probability ranges
     const probabilities = [];
     data.some((row) => {
-        const t = [];
+
         const sum = row.reduce((a, b) => a + b, 0);
         if (sum === 0) return true;
-        for (let s = 0; s < sum; s++) {
-            t.push(1 / sum * (s + 1));
+
+        const t = [];
+        const k = 1 / sum;
+        let acc = 0.0;
+        for (let s = 0; s < 3; s++) {
+            if (row[s] !== 0)
+                acc += k;
+            t.push(acc);
         }
         probabilities.push(t);
         return false;
     });
-    const rows = []
-    // for (let rowIndex = 0; rowIndex < 128; rowIndex++) {    }
 
-    return rows;
+
+
+
+    const allRows = [];
+    // generate rows
+    for (let rowIndex = 0; rowIndex < 128; rowIndex++) {
+
+        // create row
+        let newRow;
+        do {
+            newRow = [];
+            probabilities.forEach((w) => {
+                const dice = Math.random();
+                const range_index = w.findIndex((e) => dice < e);
+                newRow.push(range_index);
+            })
+
+        } while (!rowIsUnique(newRow, allRows));
+        allRows.push(newRow);
+    }
+    return allRows;
 }
 
 const data = [
-    [0, 1, 0], [1, 1, 0], [0, 1, 1], [0, 1, 1], [1, 1, 1], [0, 0, 1],
-    [1, 0, 1], [0, 1, 1], [0, 1, 1], [1, 0, 0], [1, 0, 0], [1, 0, 1], [1, 1, 1]
-]
+    [0, 0, 1], [0, 1, 0], // 0-1 (1 и 2)
+    [0, 1, 1], [1, 0, 0], // 2-3 (3 и 4)
+    [1, 0, 1], [1, 1, 0], // 4-5 (5 и 6)
+    [1, 1, 1], [0, 0, 1], // 6-7 (7 и снова 1)
+    [0, 1, 0], [0, 1, 1], // 8-9 (2 и 3)
+    [1, 0, 0], [1, 0, 1], // 10-11 (4 и 5)
+    [1, 1, 0]             // 12 (6)
+];
 calc(data);

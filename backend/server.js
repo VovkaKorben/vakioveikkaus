@@ -58,6 +58,14 @@ const ResultSchema = new mongoose.Schema({
 });
 const ResultModel = mongoose.model("Result", ResultSchema);
 
+
+const Team = mongoose.model('Team', new mongoose.Schema({
+  name: String
+}), 'teams');
+const CurrentTeams = mongoose.model('CurrentTeams', new mongoose.Schema({
+  matches: [[{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }]],
+  updatedAt: { type: Date, default: Date.now }
+}), 'teamsCurrent');
 // ROUTES -------------------------------------------------
 // 2. Эндпоинт для загрузки (GET)
 app.get('/api/game', async (req, res) => {
@@ -79,24 +87,150 @@ app.post('/api/game', async (req, res) => {
   }
 });
 
+const rowIsUnique = (newRow, allRows) => {
+  return allRows.every((row) => {
+    // verify row
+    const rowsEqual = row.every((v, i) => v === newRow[i]);
+    return !rowsEqual;
+  })
+}
+
+const calc = (data) => {
+
+  // calc probability ranges
+  const probabilities = [];
+  data.some((row) => {
+
+    const sum = row.reduce((a, b) => a + b, 0);
+    if (sum === 0) return true;
+
+    const t = [];
+    const k = 1 / sum;
+    let acc = 0.0;
+    for (let s = 0; s < 3; s++) {
+      if (row[s] !== 0)
+        acc += k;
+      t.push(acc);
+    }
+    probabilities.push(t);
+    return false;
+  });
 
 
+
+
+  const allRows = [];
+  // generate rows
+  for (let rowIndex = 0; rowIndex < 128; rowIndex++) {
+
+    // create row
+    let newRow;
+    do {
+      newRow = [];
+      probabilities.forEach((w) => {
+        const dice = Math.random();
+        const range_index = w.findIndex((e) => dice < e);
+        newRow.push(range_index);
+      })
+
+    } while (!rowIsUnique(newRow, allRows));
+    allRows.push(newRow);
+  }
+  return allRows;
+}
 app.post('/api/calc', async (req, res) => {
   try {
     const data = req.body.values;
-    // console.log(data);
-    return res.status(200).json({ message: "test" });
 
     if (data === null) {
-      await ResultModel.deleteMany({}); // Стираем все записи в коллекции результатов
+      await ResultModel.deleteMany({});
       return res.status(200).json({ message: "Таблица результатов успешно очищена" });
     }
+
     const calculationResult = calc(data);
+
+    // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
     await ResultModel.findOneAndUpdate(
-      { rows: calculationResult, createdAt: new Date() },
+      {},
+      { values: calculationResult, createdAt: new Date() },
       { upsert: true, new: true }
     );
+
     res.status(200).json(calculationResult);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.get('/api/result', async (req, res) => {
+  try {
+    const lastResult = await ResultModel.findOne().sort({ createdAt: -1 });
+
+    // Исправлено: обращаемся к values, так как в схеме поле названо именно так
+    res.status(200).json(lastResult ? lastResult.values : null);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const generateAndSaveNewSet = async () => {
+  const teams = await Team.aggregate([
+    { $sample: { size: 26 } },
+    { $project: { _id: 1 } }
+  ]);
+  const rid = teams.map(t => t._id);
+
+  const newMatches = [];
+  for (let i = 0; i < rid.length; i += 2) {
+    newMatches.push([rid[i], rid[i + 1]]);
+  }
+
+  // 3. Сохраняем как единственный документ (upsert)
+  return await CurrentTeams.findOneAndUpdate(
+    {},
+    { matches: newMatches, updatedAt: new Date() },
+    { upsert: true, new: true }
+  );
+};
+const populateMatchesData = async (matches) => {
+  const allIds = matches.flat();
+  const teamsData = await Team.find({ _id: { $in: allIds } }).lean();
+
+  return matches.map(pair => {
+    return pair.map(id => {
+      const team = teamsData.find(t => t._id.toString() === id.toString());
+      // Возвращаем только имя строкой, либо заглушку, если команда не найдена
+      return team ? team.name : 'Unknown Team';
+    });
+  });
+};
+// Получить текущие команды [cite: 5, 6]
+app.get('/api/teams', async (req, res) => {
+  try {
+    let set = await CurrentTeams.findOne().lean();
+
+    // Если пусто — генерируем автоматически
+    if (!set) {
+      const newDoc = await generateAndSaveNewSet();
+      set = newDoc.toObject();
+    }
+
+   const populatedMatches = await populateMatchesData(set.matches);
+
+    res.json(populatedMatches);
+
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/teamsupdate', async (req, res) => {
+  try {
+    const set = await generateAndSaveNewSet();
+    const populatedMatches = await populateMatchesData(set.matches);
+    res.json(populatedMatches);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

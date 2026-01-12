@@ -6,6 +6,8 @@
   --gray-border: #e0e0e0;
   --text-dark: #333333;
   --text-muted: #666666;
+  --row-hover-bg: #fafffb;
+  scrollbar-gutter: stable both-edges;
 }
 
 body {
@@ -105,6 +107,10 @@ body {
   gap: 15px;
 }
 
+.match-row:hover {
+  background: var(--row-hover-bg);
+}
+
 .match-number-badge {
   width: 24px;
   height: 24px;
@@ -154,4 +160,116 @@ body {
   background-color: var(--main-green);
   color: white;
   border-color: var(--main-green);
+}
+
+
+
+
+
+
+
+
+
+
+
+/* RESULT GRID */
+/* Основной контейнер результатов */
+.results-section {
+  max-width: 800px;
+  /* Точное соответствие .betting-container */
+  margin: 20px auto;
+  /* Центрирование на странице */
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  box-sizing: border-box;
+  /* Чтобы паддинги не раздували ширину */
+}
+
+/* Шапка с кнопкой */
+.results-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+/* Заголовок-разделитель (каждые 10 строк) */
+.results-group-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin: 15px 0 5px 0;
+  border-left: 4px solid var(--main-green);
+}
+
+.header-label {
+  width: 50px;
+  /* Увеличено для текста типа "121-128" */
+  margin-right: 15px;
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--main-green);
+  white-space: nowrap;
+}
+
+.header-values {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.header-num {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Ряд данных */
+.row-plate {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f2f2f2;
+  transition: background 0.1s;
+}
+
+.row-plate:hover {
+  background: var(--row-hover-bg);
+}
+
+.row-label {
+  width: 50px;
+  /* Должно быть равно ширине .header-label */
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  /* Изменено с 50% для овальной формы, если текст не влезет в круг */
+  font-size: 11px;
+  background: #f0f0f0;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.row-values {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.result-cell {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
 }
