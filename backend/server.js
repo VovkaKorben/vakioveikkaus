@@ -4,6 +4,7 @@ import express from 'express';
 import mongoose from "mongoose";
 import cors from 'cors';
 import { notFound, errorHandler } from './middleware/error.js';
+import { valuesDefault } from '../utils.js';
 dotenv.config({ quiet: true });
 
 /*dotenv debug
@@ -43,10 +44,13 @@ mongoose
   });
 
 // MODELS -------------------------------------------------
+
+
+
 const GameSchema = new mongoose.Schema({
   values: {
     type: [[Number]],
-    default: Array.from({ length: 13 }, () => [0, 0, 0])
+    default: valuesDefault
   },
   lastUpdated: { type: Date, default: Date.now }
 });
@@ -67,6 +71,41 @@ const CurrentTeams = mongoose.model('CurrentTeams', new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }), 'teamsCurrent');
 // ROUTES -------------------------------------------------
+
+app.get('/api/numberscreate', async (req, res) => {
+  try {
+    const data = [];
+    for (let r = 0; r < 13; r++) {
+      let row = []
+      for (let c = 0; c <= 2; c++) {
+        row.push(Math.random());
+      }
+      const sum = row.reduce((a, b) => a + b, 0);
+      for (let c = 0; c <= 2; c++) {
+        row[c] = Math.round(row[c] / sum * 100)
+      }
+      data.push(row);
+    }
+
+    const updateData = { values: data, lastUpdated: new Date() };
+    await NumberModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.post('/api/numbersreset', async (req, res) => {
+  try {
+
+    await NumberModel.deleteMany({});
+    res.status(200).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 // 2. Эндпоинт для загрузки (GET)
 app.get('/api/game', async (req, res) => {
   try {
@@ -95,6 +134,79 @@ const rowIsUnique = (newRow, allRows) => {
   })
 }
 
+// NEW CALC ------------------------------------------
+const calc2 = (data) => {
+
+  // calc probability ranges
+  const probabilities = [];
+  for (let r = 0; r < 13; r++) {
+
+
+    // calc sums
+    let nums_sum = 0;
+    for (let c = 0; c <= 2; c++) {
+      if (data.inputs[r][c] !== 0) {
+        nums_sum += data.numbers[r][c];
+      }
+    }
+    // build probabilities "wall"
+    let acc = 0.0;
+    const t = [];
+    for (let c = 0; c <= 2; c++) {
+      if (data.inputs[r][c] !== 0) {
+        acc += data.numbers[r][c] / nums_sum;
+      }
+      t.push(acc);
+    }
+    probabilities.push(t);
+  }
+
+  // generate rows
+  const allRows = [];
+  for (let rowIndex = 0; rowIndex < 128; rowIndex++) {
+
+    // create row
+    let newRow;
+    do {
+      newRow = [];
+      probabilities.forEach((w) => {
+        const dice = Math.random();
+        const range_index = w.findIndex((e) => dice < e);
+        newRow.push(range_index);
+      })
+
+    } while (!rowIsUnique(newRow, allRows));
+    allRows.push(newRow);
+  }
+  return allRows;
+}
+app.post('/api/calc2', async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (Object.keys(data).length === 0) {
+      await ResultModel.deleteMany({});
+      return res.status(200).json({ message: "Таблица результатов успешно очищена" });
+    }
+
+    const calculationResult = calc2(data);
+
+    // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
+    await ResultModel.findOneAndUpdate(
+      {},
+      { values: calculationResult, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json(calculationResult);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// ------------------------------------------
+
+
+// OLD CALC ------------------------------------------
 const calc = (data) => {
 
   // calc probability ranges
@@ -161,7 +273,7 @@ app.post('/api/calc', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+// ------------------------------------------
 
 app.get('/api/result', async (req, res) => {
   try {
@@ -216,7 +328,7 @@ app.get('/api/teams', async (req, res) => {
       set = newDoc.toObject();
     }
 
-   const populatedMatches = await populateMatchesData(set.matches);
+    const populatedMatches = await populateMatchesData(set.matches);
 
     res.json(populatedMatches);
 

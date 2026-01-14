@@ -8,6 +8,7 @@
   --text-muted: #666666;
   --row-hover-bg: #fafffb;
   scrollbar-gutter: stable both-edges;
+  box-sizing: border-box;
 }
 
 body {
@@ -33,10 +34,21 @@ body {
 /* Навигация */
 .nav-tabs-container {
   display: flex;
+  justify-content: flex-end;
   gap: 10px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--gray-border);
   padding-bottom: 15px;
+}
+
+.nav-tabs-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  border-top: 1px solid var(--gray-border);
+  padding-top: 15px;
+
 }
 
 .btn-tab {
@@ -92,7 +104,28 @@ body {
 
 
 
+.input-tab {
+  padding: 8px 16px;
+  border: 1px solid var(--gray-border);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--text-dark);
+  font-weight: 500;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  /* Убираем стандартную синюю рамку браузера */
+  transition: all 0.2s ease;
+  width: 120px;
+  /* Можно изменить по необходимости */
+}
 
+/* Эффект при фокусе — копирует ховер кнопки */
+.input-tab:focus {
+  background-color: #f0f7f3;
+  border-color: var(--main-green);
+  color: var(--main-green);
+}
 
 
 
@@ -130,6 +163,10 @@ body {
   color: var(--main-green);
   /* Зеленая цифра */
   font-weight: bold;
+}
+
+.match-row:has(+ .nav-tabs-footer) {
+  border-bottom: none;
 }
 
 .match-teams {

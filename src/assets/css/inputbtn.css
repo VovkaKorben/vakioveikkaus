@@ -1,0 +1,73 @@
+:root {
+    --group-green: #008246;
+    --group-gray: #e0e0e0;
+    --group-bg-off: #f5f5f5;
+    --group-glow: rgba(0, 130, 70, 0.4);
+    /* Зеленое свечение */
+}
+
+/* Контейнер всей группы */
+.input-group {
+    display: flex;
+    width: 70px;
+    /* Можно менять */
+    height: 35px;
+    border-radius: 10px;
+    border: 1px solid var(--group-gray);
+    overflow: hidden;
+    /* Чтобы скругление работало для внутренних элементов */
+    transition: all 0.2s ease;
+}
+
+/* Левая часть: Инпут */
+.input-group__input {
+    flex: 4;
+    width: 50%;
+    border: none;
+    outline: none;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-dark);
+    background: white;
+}
+
+/* Правая часть: Кнопка */
+.input-group__btn {
+    flex: 2;
+    width: 50%;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    background: var(--group-bg-off);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+/* СОСТОЯНИЕ: НАЖАТА (Active) */
+.input-group--active {
+    border-color: var(--group-green);
+}
+
+.input-group--active .input-group__btn {
+    background: var(--group-green);
+    color: white;
+}
+
+/* СОСТОЯНИЕ: СВЕЧЕНИЕ (Glow) */
+.input-group--glow {
+    box-shadow: 0 0 10px var(--group-glow);
+}
+
+/* Состояние, когда инпут скрыт */
+.input-group--hidden-input .input-group__input {
+    display: none;
+}
+
+/* Кнопка автоматически займет 100% ширины, так как у неё стоит flex: 1 */
+.input-group--hidden-input .input-group__btn {
+    flex: 1;
+    border-radius: 10px;
+    /* Возвращаем полное скругление, если нужно */
+}

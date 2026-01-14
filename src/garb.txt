@@ -1,0 +1,37 @@
+  <button
+                                   
+                                    className={`btn-outcome ${v[colIndex] ? 'btn-outcome--selected' : ''}`}
+                                    onClick={() => handleToggle(rowIndex, colIndex)}
+                                >
+                                    {showNumbers ? numbers[rowIndex][colIndex] : char}
+                                </button>
+
+
+
+
+
+
+                                 <div className="nav-tabs-container">
+
+                    <input className="input-tab" type="text" />
+                    <button
+                        className="btn-tab"
+                        disabled={isCalculating || (!values.every((row) => row.reduce((a, b) => a + b, 0) !== 0))}
+                        onClick={onCalculate}
+                    >Ratkaisu</button>
+                    <button className={`btn-tab ${showNumbers ? 'btn-tab--active' : ''}`} onClick={() => setShowNumbers(prev => !prev)}>%</button>
+
+
+                </div>
+
+
+                 <div className="nav-tabs-footer">
+                    <button className="btn-tab" onClick={handleClear}>Tyhjennä valinta</button>
+                    <button className="btn-tab" onClick={handleRandom}>Satunnainen valinta</button>
+                    <button className="btn-tab" onClick={handleTeams}>Satunnaiset joukkueet</button>
+                    <button className="btn-tab" onClick={randomizeNumbers}>Satunnaiset kertoimet</button>
+                    <button className="btn-tab" onClick={resetNumbers}>Oletuskertoimet</button>
+
+
+
+                </div>

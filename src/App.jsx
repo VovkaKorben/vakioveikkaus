@@ -1,45 +1,34 @@
 import React, { useState, useEffect } from 'react'
-import TextInput from './TextInput.jsx'
-import Slider from './Slider.jsx'
+import InputBtn from './InputBtn.jsx'
 import './App.css'
 const API_ROUTE = 'http://localhost:3500/api/';
-const valuesDefault = Array.from({ length: 13 }, () => ([0, 0, 0]));
+import { valuesDefault, checkDefaults, getRandomInt } from './utils.js';
+/* data format:
+item:{state:bool,value:int}
+row: item*3
+set: row*13
+*/
 const teamsDefault = Array.from({ length: 13 }, () => (['Team 1 name', 'Team 2 name']));
 
-const checkDefaults = (template, target) => {
-    // 1. Если типы не совпадают или данных нет — возвращаем шаблон
-    if (typeof template !== typeof target || target === null || target === undefined) {
-        return template;
-    }
 
-    // 2. Если это массив (например, rows, edits или buttons)
-    if (Array.isArray(template)) {
-        if (!Array.isArray(target)) return template;
+const numbersDefault = [
+    [17, 15, 68],
+    [81, 11, 8],
+    [55, 25, 21],
+    [44, 32, 25],
+    [67, 19, 13],
+    [35, 30, 35],
+    [42, 28, 29],
+    [53, 25, 22],
+    [58, 23, 19],
+    [42, 29, 29],
+    [27, 24, 49],
+    [32, 28, 40],
+    [65, 18, 17]
+];
 
-        // Создаем массив нужной длины по шаблону и проверяем каждый элемент
-        return template.map((defaultValue, index) =>
-            checkDefaults(defaultValue, target[index])
-        );
-    }
 
-    // 3. Если это объект (например, одна строка игры)
-    if (typeof template === 'object') {
-        const validatedObject = {};
-        for (const key in template) {
-            // Рекурсивно проверяем каждое свойство (state, edits, buttons)
-            validatedObject[key] = checkDefaults(template[key], target[key]);
-        }
-        return validatedObject;
-    }
 
-    // 4. Если это примитив (число 0 или 1), возвращаем само значение
-    return target;
-};
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 const ResultTable = ({ values, onReset }) => {
     const values_convert = '1X2';
@@ -49,9 +38,7 @@ const ResultTable = ({ values, onReset }) => {
     return (
         <div className="results-section">
             <div className="nav-tabs-container ">
-                <button className="btn-tab" onClick={onReset}>
-                    Clear Results
-                </button>
+                <button className="btn-tab" onClick={onReset}>Tyhjennä tulokset</button>
             </div>
 
             <div className="results-list">
@@ -89,7 +76,19 @@ const ResultTable = ({ values, onReset }) => {
     );
 };
 
-const InputTable = ({ values, onChanged, onCalculate, isCalculating, teams, handleTeams }) => {
+const InputTable = ({
+    values, // displayed data
+    onChanged, // data changed (button toggle or num value)
+    onCalculate, // go calculate
+    isCalculating,
+
+    teams, // displayed data
+
+    // numbers, resetNumbers, randomizeNumbers
+}) => {
+
+    const [solutionRows, setSolutionRows] = useState(128);
+    const [showNumbers, setShowNumbers] = useState(false);
 
     const valuesChanged = (newValues) => {
         // calc eval button
@@ -123,16 +122,7 @@ const InputTable = ({ values, onChanged, onCalculate, isCalculating, teams, hand
         <div className="betting-container">
             <div className="card-wrapper">
 
-                <div className="nav-tabs-container">
-                    <button className="btn-tab" onClick={handleClear}>Clear</button>
-                    <button className="btn-tab" onClick={handleRandom}>Random</button>
-                    <button
-                        className="btn-tab"
-                        disabled={isCalculating || (!values.every((row) => row.reduce((a, b) => a + b, 0) !== 0))}
-                        onClick={onCalculate}
-                    >Evaluate</button>
-                    <button className="btn-tab" onClick={handleTeams}>Teams</button>
-                </div>
+
                 {/* each 13 rows */}
                 {values.map((v, rowIndex) =>
                     <div
@@ -145,17 +135,23 @@ const InputTable = ({ values, onChanged, onCalculate, isCalculating, teams, hand
 
                             {/* buttons 1 X 2 */}
                             {[...'1X2'].map((char, colIndex) => (
-                                <button
+                                <InputBtn
                                     key={`r${rowIndex}_c${colIndex}`}
-                                    className={`btn-outcome ${v[colIndex] ? 'btn-outcome--selected' : ''}`}
-                                    onClick={() => handleToggle(rowIndex, colIndex)}
-                                >
-                                    {char}
-                                </button>
+                                    inputVisible={showNumbers}
+                                    caption={char}
+                                    data={values[rowIndex][colIndex]}
+                                    onChanged={(data) => onChanged(rowIndex, colIndex, data)}
+                                />
+
+
                             ))}
                         </div>
                     </div>
                 )}
+
+
+
+
             </div>
         </div >
     )
@@ -168,8 +164,7 @@ function App() {
     const [inputs, setInputs] = useState(valuesDefault);
     const [output, setOutput] = useState(null);
     const [teams, setTeams] = useState(teamsDefault);
-
-    const [isOutputCalculating, setIsOutputCalculating] = useState(false);
+    const [isCalculating, setIsCalculating] = useState(false);
 
     // LOAD INPUT / RESULT / TEAMS FROM DB -------------------------------------
     useEffect(() => {
@@ -185,7 +180,6 @@ function App() {
         fetch(`${API_ROUTE}result`)
             .then(res => res.json())
             .then(data => {
-
                 setOutput(data);
             })
             .catch(err => console.error("result load error:", err));
@@ -202,9 +196,6 @@ function App() {
 
 
     }, []);
-
-
-
     // SAVE CHANCES TO DB -------------------------------------
     useEffect(() => {
         if (!isInputLoaded) return;
@@ -223,13 +214,9 @@ function App() {
         }, 500);
         return () => clearTimeout(timeoutId);
     }, [inputs, isInputLoaded]);
-
-
     const handleValuesChanged = (values) => {
         setInputs(values);
     }
-
-
     const handleTeams = () => {
 
         const doTeamsUpdate = async () => {
@@ -250,54 +237,87 @@ function App() {
 
         doTeamsUpdate();
     }
+    const handleCalculate = async (ResetFlag) => {
+        //  doCalc(mode ? null : inputs)
 
-
-    const handleCalculate = (mode) => {
-
-        const doCalc = async (values) => {
-            setIsOutputCalculating(true)
-            // await new Promise(resolve => setTimeout(resolve, 3000));
-            try {
-                const response = await fetch(`${API_ROUTE}calc`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ values }) // Отправляем всю пачку rows
-                });
-
-                const data = await response.json();
-
-                if (Array.isArray(data)) {
-                    setOutput(data);
-                } else {
-                    setOutput(null);
+        setIsOutputCalculating(true)
+        // await new Promise(resolve => setTimeout(resolve, 3000));
+        try {
+            const req_data = ResetFlag ? {} :
+                {
+                    inputs: inputs,
+                    numbers: numbers
                 }
 
-            } catch (err) {
-                console.error("Ошибка сохранения:", err);
-            } finally {
-                setIsOutputCalculating(false)
-            }
-        }
+            const response = await fetch(`${API_ROUTE}calc2`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(req_data)
+            });
 
-        doCalc(mode ? null : inputs)
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+                setOutput(data);
+            } else {
+                setOutput(null);
+            }
+
+        } catch (err) {
+            console.error("Ошибка сохранения:", err);
+        } finally {
+            setIsOutputCalculating(false)
+        }
+    }
+    const randomizeNumbers = async () => {
+        try {
+            const response = await fetch(`${API_ROUTE}numberscreate`);
+            const data = await response.json();
+            setNumbers(data);
+        } catch (err) {
+            console.error("randomizeNumbers generate error:", err);
+        }
+    }
+    const resetNumbers = async () => {
+        try {
+            await fetch(`${API_ROUTE}numbersreset`, { method: 'POST' });
+            setNumbers(numbersDefault);
+        } catch (err) {
+            console.error("resetNumbers generate error:", err);
+        }
     }
 
-
+    const onInputChange = (rowIndex, colIndex, newData) => {
+        setInputs(prev => prev.map((row, ri) => ri !== rowIndex ? row :
+            row.map((oldData, ci) => ci !== colIndex ? oldData : newData)
+        ))
+    }
 
 
 
     return (<>
 
+
+
         {isInputLoaded
             ? <InputTable
                 values={inputs}
-                onChanged={handleValuesChanged}
-                onCalculate={() => handleCalculate(0)}
-                isCalculating={isOutputCalculating}
+                onChanged={onInputChange}
+                onCalculate={(data, rows) => handleCalculate(0)}
+                isCalculating={isCalculating}
                 teams={teams}
-                handleTeams={handleTeams}
             />
             : 'Loading...'}
+
+        {/* control panel */}
+        <div className="betting-container">
+            <div className="card-wrapper">
+                <div className="nav-tabs-container">
+                <button className="btn-tab" onClick={handleRandom}></button>
+                </div>
+            </div>
+        </div>
+
 
         {output && <ResultTable
             values={output}

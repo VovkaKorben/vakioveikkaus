@@ -2,7 +2,7 @@ import React from "react";
 
 
 
-const Btn = ({ className, onClick, caption = "", pressed, ...props }) => {
+const Btn = ({ className, onClick, caption = "",  ...props }) => {
 
 
 
