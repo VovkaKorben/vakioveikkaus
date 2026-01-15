@@ -13,15 +13,21 @@ const InputBtn = ({
 
 }) => {
 
-    const onEditChanged = (event) => {
-        const newData = { ...data };
-        newData.value = event.target.value;
+    const onEditChanged = (values) => {
+        const newData = {
+            ...data,
+            // Если поле пустое, floatValue будет undefined, поэтому ставим 0
+            value: values.floatValue ?? 0
+        };
         if (onChanged)
             onChanged(newData);
     }
     const onButtonToggle = () => {
-        const newData = { ...data };
-        newData.state = !newData.state;
+        const newData = {
+            ...data,
+            state: !data.state
+        };
+
         if (onChanged)
             onChanged(newData);
     }
@@ -41,7 +47,17 @@ const InputBtn = ({
             <NumericFormat
                 className="input-group__input"
                 value={data.value}
-                onChanged={onEditChanged} />
+                // onChange={onEditChanged} 
+                onValueChange={onEditChanged}
+
+                decimalScale={0}            // Запрещает ввод десятичных знаков (только целые)
+                allowNegative={false}       // Запрещает ввод знака минус
+                isAllowed={(values) => {    // Валидация диапазона 0-100
+                    const { floatValue } = values;
+                    // Разрешаем пустое поле (undefined) или число в диапазоне
+                    return floatValue === undefined || (floatValue >= 0 && floatValue <= 100);
+                }}
+            />
             <button
                 className="input-group__btn"
                 onClick={onButtonToggle} >

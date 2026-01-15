@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from "mongoose";
 import cors from 'cors';
-import { notFound, errorHandler } from './middleware/error.js';
-import { valuesDefault } from '../utils.js';
+import { asyncHandler, notFound, errorHandler } from './middleware/error.js';
+import { defaultInput } from '../src/utils.js';
 dotenv.config({ quiet: true });
 
 /*dotenv debug
@@ -47,84 +47,50 @@ mongoose
 
 
 
-const GameSchema = new mongoose.Schema({
+const InputSchema = new mongoose.Schema({
   values: {
-    type: [[Number]],
-    default: valuesDefault
+    type: [[{
+      state: { type: Boolean, default: true },
+      value: { type: Number, default: 0 }
+    }]],
+    default: defaultInput
   },
   lastUpdated: { type: Date, default: Date.now }
 });
-const GameModel = mongoose.model("Game", GameSchema);
+const InputModel = mongoose.model("input", InputSchema);
 
-const ResultSchema = new mongoose.Schema({
+const OutputSchema = new mongoose.Schema({
   values: { type: [[Number]], required: true },
   createdAt: { type: Date, default: Date.now }
 });
-const ResultModel = mongoose.model("Result", ResultSchema);
+const OutputModel = mongoose.model("output", OutputSchema);
 
 
-const Team = mongoose.model('Team', new mongoose.Schema({
-  name: String
-}), 'teams');
+const Team = mongoose.model('Team', new mongoose.Schema({ name: String }), 'teams');
 const CurrentTeams = mongoose.model('CurrentTeams', new mongoose.Schema({
   matches: [[{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }]],
   updatedAt: { type: Date, default: Date.now }
 }), 'teamsCurrent');
 // ROUTES -------------------------------------------------
 
-app.get('/api/numberscreate', async (req, res) => {
-  try {
-    const data = [];
-    for (let r = 0; r < 13; r++) {
-      let row = []
-      for (let c = 0; c <= 2; c++) {
-        row.push(Math.random());
-      }
-      const sum = row.reduce((a, b) => a + b, 0);
-      for (let c = 0; c <= 2; c++) {
-        row[c] = Math.round(row[c] / sum * 100)
-      }
-      data.push(row);
-    }
-
-    const updateData = { values: data, lastUpdated: new Date() };
-    await NumberModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
-    res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-app.post('/api/numbersreset', async (req, res) => {
-  try {
-
-    await NumberModel.deleteMany({});
-    res.status(200).send();
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 
+// INPUTS load
+app.get('/api/input', asyncHandler(async (req, res) => {
 
-// 2. Эндпоинт для загрузки (GET)
-app.get('/api/game', async (req, res) => {
-  try {
-    const data = await GameModel.findOne();
-    res.json(data.values);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-// 3. Эндпоинт для сохранения (POST)
-app.post('/api/game', async (req, res) => {
-  try {
-    const updateData = { ...req.body, lastUpdated: new Date() };
-    await GameModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
-    res.status(200).json({ message: "Успешно сохранено в Atlas" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  const data = await InputModel.findOne();
+  res.json(data ? data.values : null);
+
+}));
+// INPUTS save
+app.post('/api/input', asyncHandler(async (req, res) => {
+  const updateData = {
+    values: req.body,
+    lastUpdated: new Date()
+  };
+  await InputModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
+  res.status(200).json({ message: "Успешно сохранено в Atlas" });
+}));
 
 const rowIsUnique = (newRow, allRows) => {
   return allRows.every((row) => {
@@ -135,7 +101,7 @@ const rowIsUnique = (newRow, allRows) => {
 }
 
 // NEW CALC ------------------------------------------
-const calc2 = (data) => {
+const calculate = (data) => {
 
   // calc probability ranges
   const probabilities = [];
@@ -180,112 +146,35 @@ const calc2 = (data) => {
   }
   return allRows;
 }
-app.post('/api/calc2', async (req, res) => {
-  try {
-    const data = req.body;
-
-    if (Object.keys(data).length === 0) {
-      await ResultModel.deleteMany({});
-      return res.status(200).json({ message: "Таблица результатов успешно очищена" });
-    }
-
-    const calculationResult = calc2(data);
-
-    // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
-    await ResultModel.findOneAndUpdate(
-      {},
-      { values: calculationResult, createdAt: new Date() },
-      { upsert: true, new: true }
-    );
-
-    res.status(200).json(calculationResult);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+app.post('/api/calculate', asyncHandler(async (req, res) => {
+  const data = req.body;
+  if (Object.keys(data).length === 0) {
+    await ResultModel.deleteMany({});
+    return res.status(200).json({ message: "Таблица результатов успешно очищена" });
   }
-});
+  const calculationResult = calculate(data);
+  // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
+  await ResultModel.findOneAndUpdate(
+    {},
+    { values: calculationResult, createdAt: new Date() },
+    { upsert: true, new: true }
+  );
+
+  res.status(200).json(calculationResult);
+
+}));
 // ------------------------------------------
 
 
-// OLD CALC ------------------------------------------
-const calc = (data) => {
-
-  // calc probability ranges
-  const probabilities = [];
-  data.some((row) => {
-
-    const sum = row.reduce((a, b) => a + b, 0);
-    if (sum === 0) return true;
-
-    const t = [];
-    const k = 1 / sum;
-    let acc = 0.0;
-    for (let s = 0; s < 3; s++) {
-      if (row[s] !== 0)
-        acc += k;
-      t.push(acc);
-    }
-    probabilities.push(t);
-    return false;
-  });
+// OUTPUT load ---------------------------------------------------------------
+app.get('/api/output', asyncHandler(async (req, res) => {
+  const lastResult = await OutputModel.findOne().sort({ createdAt: -1 });
+  res.status(200).json(lastResult ? lastResult.values : null);
+}));
 
 
 
-
-  const allRows = [];
-  // generate rows
-  for (let rowIndex = 0; rowIndex < 128; rowIndex++) {
-
-    // create row
-    let newRow;
-    do {
-      newRow = [];
-      probabilities.forEach((w) => {
-        const dice = Math.random();
-        const range_index = w.findIndex((e) => dice < e);
-        newRow.push(range_index);
-      })
-
-    } while (!rowIsUnique(newRow, allRows));
-    allRows.push(newRow);
-  }
-  return allRows;
-}
-app.post('/api/calc', async (req, res) => {
-  try {
-    const data = req.body.values;
-
-    if (data === null) {
-      await ResultModel.deleteMany({});
-      return res.status(200).json({ message: "Таблица результатов успешно очищена" });
-    }
-
-    const calculationResult = calc(data);
-
-    // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
-    await ResultModel.findOneAndUpdate(
-      {},
-      { values: calculationResult, createdAt: new Date() },
-      { upsert: true, new: true }
-    );
-
-    res.status(200).json(calculationResult);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-// ------------------------------------------
-
-app.get('/api/result', async (req, res) => {
-  try {
-    const lastResult = await ResultModel.findOne().sort({ createdAt: -1 });
-
-    // Исправлено: обращаемся к values, так как в схеме поле названо именно так
-    res.status(200).json(lastResult ? lastResult.values : null);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
+// TEAMS load/creation ---------------------------------------------------------------
 const generateAndSaveNewSet = async () => {
   const teams = await Team.aggregate([
     { $sample: { size: 26 } },
@@ -318,35 +207,23 @@ const populateMatchesData = async (matches) => {
   });
 };
 // Получить текущие команды [cite: 5, 6]
-app.get('/api/teams', async (req, res) => {
-  try {
-    let set = await CurrentTeams.findOne().lean();
+app.get('/api/teams', asyncHandler(async (req, res) => {
+  let set = await CurrentTeams.findOne().lean();
 
-    // Если пусто — генерируем автоматически
-    if (!set) {
-      const newDoc = await generateAndSaveNewSet();
-      set = newDoc.toObject();
-    }
-
-    const populatedMatches = await populateMatchesData(set.matches);
-
-    res.json(populatedMatches);
-
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  // Если пусто — генерируем автоматически
+  if (!set) {
+    const newDoc = await generateAndSaveNewSet();
+    set = newDoc.toObject();
   }
-});
 
-app.post('/api/teamsupdate', async (req, res) => {
-  try {
-    const set = await generateAndSaveNewSet();
-    const populatedMatches = await populateMatchesData(set.matches);
-    res.json(populatedMatches);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  const populatedMatches = await populateMatchesData(set.matches);
+  res.json(populatedMatches);
+}));
+app.post('/api/teamsupdate', asyncHandler(async (req, res) => {
+  const set = await generateAndSaveNewSet();
+  const populatedMatches = await populateMatchesData(set.matches);
+  res.json(populatedMatches);
+}));
 
 app.use(notFound);
 app.use(errorHandler);

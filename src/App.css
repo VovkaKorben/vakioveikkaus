@@ -29,6 +29,9 @@ body {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   padding: 15px;
+  max-width: 800px;
+
+  margin: 0 auto;
 }
 
 /* Навигация */
@@ -39,6 +42,7 @@ body {
   margin-bottom: 20px;
   border-bottom: 1px solid var(--gray-border);
   padding-bottom: 15px;
+  align-items: center;
 }
 
 .nav-tabs-footer {
@@ -116,7 +120,8 @@ body {
   outline: none;
   /* Убираем стандартную синюю рамку браузера */
   transition: all 0.2s ease;
-  width: 120px;
+  width: 60px;
+  text-align: center;
   /* Можно изменить по необходимости */
 }
 
@@ -154,6 +159,7 @@ body {
   font-size: 14px;
   background: #f0f0f0;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* Состояние активной строки (номер закрашен) */
@@ -178,7 +184,7 @@ body {
 /* Кнопки выбора и статистики */
 .selection-group {
   display: flex;
-  gap: 5px;
+  gap: 8px;
 }
 
 .btn-outcome {

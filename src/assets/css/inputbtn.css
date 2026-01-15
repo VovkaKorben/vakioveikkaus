@@ -3,20 +3,23 @@
     --group-gray: #e0e0e0;
     --group-bg-off: #f5f5f5;
     --group-glow: rgba(0, 130, 70, 0.4);
-    /* Зеленое свечение */
 }
 
 /* Контейнер всей группы */
 .input-group {
     display: flex;
-    width: 70px;
-    /* Можно менять */
+    width: 100px;
     height: 35px;
     border-radius: 10px;
-    border: 1px solid var(--group-gray);
+
+    /* ЧИТ №1: Вместо border используем box-shadow. 
+       Он не создает зазоров и рендерится мягче. */
+    box-shadow: 0 0 0 1px var(--group-gray);
+
+    /* Оставляем overflow: hidden, он теперь будет работать идеально */
     overflow: hidden;
-    /* Чтобы скругление работало для внутренних элементов */
     transition: all 0.2s ease;
+    background: white;
 }
 
 /* Левая часть: Инпут */
@@ -27,8 +30,9 @@
     outline: none;
     text-align: center;
     font-weight: 600;
-    color: var(--text-dark);
     background: white;
+    /* Убираем лишние радиусы у детей, пусть родитель клипает сам */
+    border-radius: 0;
 }
 
 /* Правая часть: Кнопка */
@@ -39,15 +43,22 @@
     outline: none;
     cursor: pointer;
     background: var(--group-bg-off);
-    color: var(--text-muted);
+    color: #666;
     font-size: 12px;
     font-weight: bold;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
+    /* Убираем лишние радиусы у детей */
+    border-radius: 0;
 }
 
 /* СОСТОЯНИЕ: НАЖАТА (Active) */
 .input-group--active {
-    border-color: var(--group-green);
+    /* ЧИТ №2: Меняем цвет "рамки" через тень */
+    box-shadow: 0 0 0 1px var(--group-green);
+    /* ЧИТ №3: Подкрашиваем фон самого контейнера в тот же зеленый.
+       Теперь, если между кнопкой и рамкой будет щель в 0.001 пикселя, 
+       сквозь неё будет виден зеленый фон, а не белая "залысина". */
+    background: var(--group-green);
 }
 
 .input-group--active .input-group__btn {
@@ -57,7 +68,8 @@
 
 /* СОСТОЯНИЕ: СВЕЧЕНИЕ (Glow) */
 .input-group--glow {
-    box-shadow: 0 0 10px var(--group-glow);
+    /* Совмещаем рамку и свечение */
+    box-shadow: 0 0 0 1px var(--group-green), 0 0 10px var(--group-glow);
 }
 
 /* Состояние, когда инпут скрыт */
@@ -65,9 +77,9 @@
     display: none;
 }
 
-/* Кнопка автоматически займет 100% ширины, так как у неё стоит flex: 1 */
 .input-group--hidden-input .input-group__btn {
     flex: 1;
-    border-radius: 10px;
-    /* Возвращаем полное скругление, если нужно */
+    width: 100%;
+    /* Здесь тоже убираем радиус, родитель всё сделает сам */
+    border-radius: 0;
 }

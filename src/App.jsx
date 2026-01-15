@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import InputBtn from './InputBtn.jsx'
 import './App.css'
 const API_ROUTE = 'http://localhost:3500/api/';
-import { valuesDefault, checkDefaults, getRandomInt } from './utils.js';
+import { defaultInput, checkDefaults, getRandomInt } from './utils.js';
 /* data format:
 item:{state:bool,value:int}
 row: item*3
@@ -30,7 +30,7 @@ const numbersDefault = [
 
 
 
-const ResultTable = ({ values, onReset }) => {
+const OutputTable = ({ values, onReset, solutionRows }) => {
     const values_convert = '1X2';
     const colHeaders = Array.from({ length: 13 }, (_, i) => i + 1);
 
@@ -84,10 +84,13 @@ const InputTable = ({
 
     teams, // displayed data
 
-    // numbers, resetNumbers, randomizeNumbers
+    solutionRows,
+    changeSolutionRows,
+
+    doSolution
 }) => {
 
-    const [solutionRows, setSolutionRows] = useState(128);
+
     const [showNumbers, setShowNumbers] = useState(false);
 
     const valuesChanged = (newValues) => {
@@ -119,41 +122,51 @@ const InputTable = ({
 
     return (
 
-        <div className="betting-container">
-            <div className="card-wrapper">
-
-
-                {/* each 13 rows */}
-                {values.map((v, rowIndex) =>
-                    <div
-                        key={rowIndex}
-                        className={`match-row ${v.reduce((a, b) => a + b, 0) ? 'match-row--active' : ''}`}
-                    >
-                        <div className="match-number-badge">{rowIndex + 1}</div>
-                        <div className="match-teams">{teams[rowIndex][0]} - {teams[rowIndex][1]}</div>
-                        <div className="selection-group">
-
-                            {/* buttons 1 X 2 */}
-                            {[...'1X2'].map((char, colIndex) => (
-                                <InputBtn
-                                    key={`r${rowIndex}_c${colIndex}`}
-                                    inputVisible={showNumbers}
-                                    caption={char}
-                                    data={values[rowIndex][colIndex]}
-                                    onChanged={(data) => onChanged(rowIndex, colIndex, data)}
-                                />
-
-
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-
-
-
+        <div className="card-wrapper">
+            <div className="nav-tabs-container">
+                Rivimäärä<input className="input-tab" type="text" value={solutionRows} onChange={(e) => setSolutionRows(e.target.value)} />
+                <button className='btn-tab' onClick={doSolution}>Ratkaisu</button>
+                <button className={`btn-tab ${showNumbers ? 'btn-tab--active' : ''}`} onClick={() => setShowNumbers(prev => !prev)}>%</button>
             </div>
-        </div >
+
+            {/* each 13 rows */}
+            {values.map((v, rowIndex) =>
+                <div
+                    key={rowIndex}
+                    className={`match-row ${v.reduce((a, b) => a + b, 0) ? 'match-row--active' : ''}`}
+                >
+                    <div className="match-number-badge">{rowIndex + 1}</div>
+                    <div className="match-teams">{teams[rowIndex][0]} - {teams[rowIndex][1]}</div>
+                    <div className="selection-group">
+                        {/* input nums sum */}
+
+                        {
+                            /*inputs.reduce((acc, item, i) => {
+                                acc.push(<InputBtn key={i} data={item} />);
+                                if ((i + 1) % 3 === 0) acc.push(<hr key={`hr-${i}`} />);
+                                return acc;
+                            }, [])*/}
+
+                        {/* buttons 1 X 2 */}
+                        {[...'1X2'].map((char, colIndex) => (
+                            <InputBtn
+                                key={`r${rowIndex}_c${colIndex}`}
+                                inputVisible={showNumbers}
+                                caption={char}
+                                data={values[rowIndex][colIndex]}
+                                onChanged={(data) => onChanged(rowIndex, colIndex, data)}
+                            />
+
+
+                        ))}
+                    </div>
+                </div>
+            )}
+
+
+
+
+        </div>
     )
 }
 
@@ -161,23 +174,23 @@ const InputTable = ({
 
 function App() {
     const [isInputLoaded, setIsInputLoaded] = useState(false);
-    const [inputs, setInputs] = useState(valuesDefault);
+    const [inputs, setInputs] = useState(defaultInput);
     const [output, setOutput] = useState(null);
     const [teams, setTeams] = useState(teamsDefault);
     const [isCalculating, setIsCalculating] = useState(false);
-
+    const [solutionRows, setSolutionRows] = useState(128);
     // LOAD INPUT / RESULT / TEAMS FROM DB -------------------------------------
     useEffect(() => {
-        fetch(`${API_ROUTE}game`)
+        fetch(`${API_ROUTE}input`)
             .then(res => res.json())
             .then(data => {
-                const verified = checkDefaults(valuesDefault, data);
+                const verified = checkDefaults(defaultInput, data);
                 setInputs(verified);
                 setIsInputLoaded(true);
             })
             .catch(err => console.error("inputs load error:", err));
 
-        fetch(`${API_ROUTE}result`)
+        fetch(`${API_ROUTE}output`)
             .then(res => res.json())
             .then(data => {
                 setOutput(data);
@@ -196,63 +209,35 @@ function App() {
 
 
     }, []);
-    // SAVE CHANCES TO DB -------------------------------------
+    // SAVE INPUTS -------------------------------------
     useEffect(() => {
         if (!isInputLoaded) return;
 
         const timeoutId = setTimeout(async () => {
             try {
-                await fetch(`${API_ROUTE}game`, {
+                await fetch(`${API_ROUTE}input`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ values: inputs }) // Отправляем всю пачку rows
+                    body: JSON.stringify(inputs) // Отправляем всю пачку rows
                 });
-                //   console.log("Хозяин, всё сохранено!");
-            } catch (err) {
-                console.error("Ошибка сохранения:", err);
-            }
+            } catch (err) { console.error("inputs save error:", err); }
         }, 500);
         return () => clearTimeout(timeoutId);
     }, [inputs, isInputLoaded]);
-    const handleValuesChanged = (values) => {
-        setInputs(values);
-    }
-    const handleTeams = () => {
-
-        const doTeamsUpdate = async () => {
-            try {
-                const response = await fetch(`${API_ROUTE}teamsupdate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                const data = await response.json();
-                setTeams(data);
 
 
-            } catch (err) {
-                console.error("teams generate error:", err);
-            }
-        }
-
-        doTeamsUpdate();
-    }
-    const handleCalculate = async (ResetFlag) => {
-        //  doCalc(mode ? null : inputs)
-
-        setIsOutputCalculating(true)
-        // await new Promise(resolve => setTimeout(resolve, 3000));
+    const doSolution = async () => {
+        setIsCalculating(true)
         try {
-            const req_data = ResetFlag ? {} :
-                {
-                    inputs: inputs,
-                    numbers: numbers
-                }
 
-            const response = await fetch(`${API_ROUTE}calc2`, {
+
+            const response = await fetch(`${API_ROUTE}calculate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(req_data)
+                body: JSON.stringify({
+                    inputs: inputs,
+                    rowCount: solutionRows
+                })
             });
 
             const data = await response.json();
@@ -266,25 +251,23 @@ function App() {
         } catch (err) {
             console.error("Ошибка сохранения:", err);
         } finally {
-            setIsOutputCalculating(false)
+            setIsCalculating(false)
         }
     }
-    const randomizeNumbers = async () => {
-        try {
-            const response = await fetch(`${API_ROUTE}numberscreate`);
-            const data = await response.json();
-            setNumbers(data);
-        } catch (err) {
-            console.error("randomizeNumbers generate error:", err);
-        }
+    const handleClear = () => {
+
     }
-    const resetNumbers = async () => {
-        try {
-            await fetch(`${API_ROUTE}numbersreset`, { method: 'POST' });
-            setNumbers(numbersDefault);
-        } catch (err) {
-            console.error("resetNumbers generate error:", err);
-        }
+    const handleRandom = () => {
+
+    }
+    const handleTeams = () => {
+
+    }
+    const randomizeNumbers = () => {
+
+    }
+    const resetNumbers = () => {
+
     }
 
     const onInputChange = (rowIndex, colIndex, newData) => {
@@ -293,35 +276,43 @@ function App() {
         ))
     }
 
-
-
     return (<>
-
-
-
         {isInputLoaded
             ? <InputTable
                 values={inputs}
                 onChanged={onInputChange}
-                onCalculate={(data, rows) => handleCalculate(0)}
+                onCalculate={(data, rows) => doCalculate(0)}
                 isCalculating={isCalculating}
                 teams={teams}
+                solutionRows={solutionRows}
+                changeSolutionRows={setSolutionRows}
+
+                doSolution={doSolution}
             />
             : 'Loading...'}
 
         {/* control panel */}
-        <div className="betting-container">
-            <div className="card-wrapper">
-                <div className="nav-tabs-container">
-                <button className="btn-tab" onClick={handleRandom}></button>
-                </div>
+        <div className="card-wrapper" style={{ marginTop: '10px' }} >
+            <div className="nav-tabs-container" style={{
+                borderBottom: 'none',
+                paddingBottom: 0,
+                marginBottom: 0
+            }}>
+                {/* <button className="btn-tab" onClick={handleRandom}></button> */}
+                {/* <button className="btn-tab" >Random</button> */}
+                {/* <button className="btn-tab" >Clear</button> */}
+                <button className="btn-tab" onClick={handleClear}>Tyhjennä valinta</button>
+                <button className="btn-tab" onClick={handleRandom}>Satunnainen valinta</button>
+                <button className="btn-tab" onClick={handleTeams}>Satunnaiset joukkueet</button>
+                <button className="btn-tab" onClick={randomizeNumbers}>Satunnaiset kertoimet</button>
+                <button className="btn-tab" onClick={resetNumbers}>Oletuskertoimet</button>
             </div>
         </div>
 
 
-        {output && <ResultTable
+        {output && <OutputTable
             values={output}
-            onReset={() => handleCalculate(1)}
+            onReset={doOutputClear}
         />}
     </>)
 }

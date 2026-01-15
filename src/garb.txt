@@ -35,3 +35,145 @@
 
 
                 </div>
+
+
+
+
+
+
+                
+// OLD CALC ------------------------------------------
+const calc = (data) => {
+
+  // calc probability ranges
+  const probabilities = [];
+  data.some((row) => {
+
+    const sum = row.reduce((a, b) => a + b, 0);
+    if (sum === 0) return true;
+
+    const t = [];
+    const k = 1 / sum;
+    let acc = 0.0;
+    for (let s = 0; s < 3; s++) {
+      if (row[s] !== 0)
+        acc += k;
+      t.push(acc);
+    }
+    probabilities.push(t);
+    return false;
+  });
+
+
+
+
+  const allRows = [];
+  // generate rows
+  for (let rowIndex = 0; rowIndex < 128; rowIndex++) {
+
+    // create row
+    let newRow;
+    do {
+      newRow = [];
+      probabilities.forEach((w) => {
+        const dice = Math.random();
+        const range_index = w.findIndex((e) => dice < e);
+        newRow.push(range_index);
+      })
+
+    } while (!rowIsUnique(newRow, allRows));
+    allRows.push(newRow);
+  }
+  return allRows;
+}
+app.post('/api/calc', async (req, res) => {
+  try {
+    const data = req.body.values;
+
+    if (data === null) {
+      await ResultModel.deleteMany({});
+      return res.status(200).json({ message: "Таблица результатов успешно очищена" });
+    }
+
+    const calculationResult = calc(data);
+
+    // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
+    await ResultModel.findOneAndUpdate(
+      {},
+      { values: calculationResult, createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json(calculationResult);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// ------------------------------------------
+
+
+  const randomizeNumbers = async () => {
+        try {
+            const response = await fetch(`${API_ROUTE}numberscreate`);
+            const data = await response.json();
+            setNumbers(data);
+        } catch (err) {
+            console.error("randomizeNumbers generate error:", err);
+        }
+    }
+    const resetNumbers = async () => {
+        try {
+            await fetch(`${API_ROUTE}numbersreset`, { method: 'POST' });
+            setNumbers(numbersDefault);
+        } catch (err) {
+            console.error("resetNumbers generate error:", err);
+        }
+    }
+
+    //const handleValuesChanged = (values) => {        setInputs(values);    }
+    const handleTeams = async () => {
+
+        try {
+            const response = await fetch(`${API_ROUTE}teamsupdate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            setTeams(data);
+        } catch (err) { console.error("teams generate error:", err); }
+    }
+
+
+
+    
+app.get('/api/numberscreate', async (req, res) => {
+  try {
+    const data = [];
+    for (let r = 0; r < 13; r++) {
+      let row = []
+      for (let c = 0; c <= 2; c++) {
+        row.push(Math.random());
+      }
+      const sum = row.reduce((a, b) => a + b, 0);
+      for (let c = 0; c <= 2; c++) {
+        row[c] = Math.round(row[c] / sum * 100)
+      }
+      data.push(row);
+    }
+
+    const updateData = { values: data, lastUpdated: new Date() };
+    await NumberModel.findOneAndUpdate({}, updateData, { upsert: true, new: true });
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.post('/api/numbersreset', async (req, res) => {
+  try {
+
+    await NumberModel.deleteMany({});
+    res.status(200).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
