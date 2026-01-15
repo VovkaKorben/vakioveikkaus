@@ -177,3 +177,31 @@ app.post('/api/numbersreset', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+    const handleToggle = (rowIndex, colIndex) => {
+        const newValues = values.map((row, ri) => {
+            return ri === rowIndex ? row.map((v, ci) => ci === colIndex ? 1 - v : v) : row
+        });
+        valuesChanged(newValues);
+    }
+
+    const handleClear = () => {
+        const newValues = [...valuesDefault];
+        valuesChanged(newValues);
+    }
+    const handleRandom = () => {
+        const newValues = valuesDefault.map((row) => {
+            const dice = getRandomInt(1, 7);
+            return row.map((v, i) => {
+                return (dice >> i) & 1;
+            });
+        });
+        valuesChanged(newValues);
+    }
+
+    const valuesChanged = (newValues) => {
+        // calc eval button
+        if (onChanged)
+            onChanged(newValues);
+    }

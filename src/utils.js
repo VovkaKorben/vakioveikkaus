@@ -1,3 +1,10 @@
+/* data format:
+item:{state:bool,value:int}
+row: item*3
+set: row*13
+*/
+
+
 export const checkDefaults = (template, target) => {
     // 1. Если типы не совпадают или данных нет — возвращаем шаблон
     if (typeof template !== typeof target || target === null || target === undefined) {
@@ -37,3 +44,23 @@ export const defaultInput = Array.from({ length: 13 }, () => (
         { state: true, value: 0 }
     ))
 ));
+
+
+export const teamsDefault = Array.from({ length: 13 }, () => (['Team 1 name', 'Team 2 name']));
+
+
+export const numbersDefault = [
+    [17, 15, 68],
+    [81, 11, 8],
+    [55, 25, 21],
+    [44, 32, 25],
+    [67, 19, 13],
+    [35, 30, 35],
+    [42, 28, 29],
+    [53, 25, 22],
+    [58, 23, 19],
+    [42, 29, 29],
+    [27, 24, 49],
+    [32, 28, 40],
+    [65, 18, 17]
+];

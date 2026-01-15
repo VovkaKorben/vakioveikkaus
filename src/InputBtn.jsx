@@ -55,7 +55,7 @@ const InputBtn = ({
                 isAllowed={(values) => {    // Валидация диапазона 0-100
                     const { floatValue } = values;
                     // Разрешаем пустое поле (undefined) или число в диапазоне
-                    return floatValue === undefined || (floatValue >= 0 && floatValue <= 100);
+                    return floatValue === undefined || (floatValue > 0 && floatValue <= 100);
                 }}
             />
             <button

@@ -5,7 +5,9 @@ import mongoose from "mongoose";
 import cors from 'cors';
 import { asyncHandler, notFound, errorHandler } from './middleware/error.js';
 import { defaultInput } from '../src/utils.js';
+import { prettify } from '../src/debug.js';
 dotenv.config({ quiet: true });
+
 
 /*dotenv debug
 const result = dotenv.config();
@@ -60,9 +62,12 @@ const InputSchema = new mongoose.Schema({
 const InputModel = mongoose.model("input", InputSchema);
 
 const OutputSchema = new mongoose.Schema({
-  values: { type: [[Number]], required: true },
+  values: { type: [[Number]], required: true }, // 13 * количество реальных рядов
+  rowCount: { type: Number, required: true },    // количество реальных рядов
+  requestedRows: { type: Number, required: true }, // количество заданных рядов
   createdAt: { type: Date, default: Date.now }
 });
+
 const OutputModel = mongoose.model("output", OutputSchema);
 
 
@@ -103,6 +108,8 @@ const rowIsUnique = (newRow, allRows) => {
 // NEW CALC ------------------------------------------
 const calculate = (data) => {
 
+
+
   // calc probability ranges
   const probabilities = [];
   for (let r = 0; r < 13; r++) {
@@ -111,25 +118,32 @@ const calculate = (data) => {
     // calc sums
     let nums_sum = 0;
     for (let c = 0; c <= 2; c++) {
-      if (data.inputs[r][c] !== 0) {
-        nums_sum += data.numbers[r][c];
+      const x = data.inputs[r][c];
+      if (x.state === true) {
+        nums_sum += x.value;
       }
     }
     // build probabilities "wall"
     let acc = 0.0;
     const t = [];
-    for (let c = 0; c <= 2; c++) {
-      if (data.inputs[r][c] !== 0) {
-        acc += data.numbers[r][c] / nums_sum;
+    for (let c = 0; c < 2; c++) {
+      const x = data.inputs[r][c];
+      if (x.state === true) {
+        acc += x.value / nums_sum;
       }
       t.push(acc);
     }
+    t.push(1);
     probabilities.push(t);
   }
 
   // generate rows
   const allRows = [];
-  for (let rowIndex = 0; rowIndex < 128; rowIndex++) {
+  const max_rows = Math.min(
+    data.rowCount,
+    data.inputs.map(row => row.reduce((s, a) => s + (+a.state), 0)).reduce((m, a) => m * a, 1)
+  );
+  for (let rowIndex = 0; rowIndex < max_rows; rowIndex++) {
 
     // create row
     let newRow;
@@ -146,21 +160,30 @@ const calculate = (data) => {
   }
   return allRows;
 }
-app.post('/api/calculate', asyncHandler(async (req, res) => {
+app.post('/api/solution', asyncHandler(async (req, res) => {
   const data = req.body;
+  /*
   if (Object.keys(data).length === 0) {
     await ResultModel.deleteMany({});
     return res.status(200).json({ message: "Таблица результатов успешно очищена" });
   }
+    */
   const calculationResult = calculate(data);
-  // Исправлено: пустой фильтр {}, обновление поля values, опции в третьем аргументе
-  await ResultModel.findOneAndUpdate(
+  const updateData = {
+    values: calculationResult,
+    rowCount: calculationResult.length,
+    requestedRows: data.rowCount,
+    createdAt: new Date()
+  };
+
+  // 3. Сохраняем единственный экземпляр (upsert)
+ const savedDoc = await OutputModel.findOneAndUpdate(
     {},
-    { values: calculationResult, createdAt: new Date() },
-    { upsert: true, new: true }
+    updateData,
+    { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
-  res.status(200).json(calculationResult);
+  res.status(200).json(savedDoc);
 
 }));
 // ------------------------------------------
@@ -171,8 +194,11 @@ app.get('/api/output', asyncHandler(async (req, res) => {
   const lastResult = await OutputModel.findOne().sort({ createdAt: -1 });
   res.status(200).json(lastResult ? lastResult.values : null);
 }));
-
-
+// OUTPUT delete ---------------------------------------------------------------
+app.delete('/api/solution', asyncHandler(async (req, res) => {
+  await OutputModel.deleteMany({});
+  res.status(200).json({ message: "Таблица результатов успешно очищена" });
+}));
 
 // TEAMS load/creation ---------------------------------------------------------------
 const generateAndSaveNewSet = async () => {

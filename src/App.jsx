@@ -2,35 +2,15 @@ import React, { useState, useEffect } from 'react'
 import InputBtn from './InputBtn.jsx'
 import './App.css'
 const API_ROUTE = 'http://localhost:3500/api/';
-import { defaultInput, checkDefaults, getRandomInt } from './utils.js';
-/* data format:
-item:{state:bool,value:int}
-row: item*3
-set: row*13
-*/
-const teamsDefault = Array.from({ length: 13 }, () => (['Team 1 name', 'Team 2 name']));
-
-
-const numbersDefault = [
-    [17, 15, 68],
-    [81, 11, 8],
-    [55, 25, 21],
-    [44, 32, 25],
-    [67, 19, 13],
-    [35, 30, 35],
-    [42, 28, 29],
-    [53, 25, 22],
-    [58, 23, 19],
-    [42, 29, 29],
-    [27, 24, 49],
-    [32, 28, 40],
-    [65, 18, 17]
-];
+import { teamsDefault, defaultInput, checkDefaults, getRandomInt, numbersDefault } from './utils.js';
+import { NumericFormat } from 'react-number-format';
+import { prettify } from './debug.js';
 
 
 
 
-const OutputTable = ({ values, onReset, solutionRows }) => {
+
+const OutputTable = ({ values, onReset }) => {
     const values_convert = '1X2';
     const colHeaders = Array.from({ length: 13 }, (_, i) => i + 1);
 
@@ -79,73 +59,71 @@ const OutputTable = ({ values, onReset, solutionRows }) => {
 const InputTable = ({
     values, // displayed data
     onChanged, // data changed (button toggle or num value)
-    onCalculate, // go calculate
+    doSolution, // go calculate
     isCalculating,
 
     teams, // displayed data
 
     solutionRows,
-    changeSolutionRows,
+    setSolutionRows,
 
-    doSolution
+
 }) => {
 
+    // button "show numbers" load / save
+    const [showNumbers, setShowNumbers] = useState(() => {
+        return localStorage.getItem('showNumbers') === 'true';
+    });
+    useEffect(() => {
+        localStorage.setItem('showNumbers', showNumbers);
+    }, [showNumbers]);
 
-    const [showNumbers, setShowNumbers] = useState(false);
-
-    const valuesChanged = (newValues) => {
-        // calc eval button
-        if (onChanged)
-            onChanged(newValues);
-    }
-
-    const handleToggle = (rowIndex, colIndex) => {
-        const newValues = values.map((row, ri) => {
-            return ri === rowIndex ? row.map((v, ci) => ci === colIndex ? 1 - v : v) : row
-        });
-        valuesChanged(newValues);
-    }
-
-    const handleClear = () => {
-        const newValues = [...valuesDefault];
-        valuesChanged(newValues);
-    }
-    const handleRandom = () => {
-        const newValues = valuesDefault.map((row) => {
-            const dice = getRandomInt(1, 7);
-            return row.map((v, i) => {
-                return (dice >> i) & 1;
-            });
-        });
-        valuesChanged(newValues);
-    }
+    const sums = values.map(row => row.map(i => i.value).reduce((partialSum, a) => partialSum + a, 0));
+    const allow_solution = values.every((v) => v.some((e) => e.state));
 
     return (
 
         <div className="card-wrapper">
             <div className="nav-tabs-container">
-                Rivimäärä<input className="input-tab" type="text" value={solutionRows} onChange={(e) => setSolutionRows(e.target.value)} />
-                <button className='btn-tab' onClick={doSolution}>Ratkaisu</button>
+                Rivimäärä
+
+
+
+                <NumericFormat
+                    className="input-tab"
+                    value={solutionRows}
+                    onValueChange={v => setSolutionRows(v.floatValue ?? 0)}
+
+                    decimalScale={0}            // Запрещает ввод десятичных знаков (только целые)
+                    allowNegative={false}       // Запрещает ввод знака минус
+                    isAllowed={(values) => {    // Валидация диапазона 0-100
+                        const { floatValue } = values;
+                        // Разрешаем пустое поле (undefined) или число в диапазоне
+                        return floatValue === undefined || (floatValue > 0 && floatValue <= 5000);
+                    }}
+                />
+
+
+
+                <button
+                    className='btn-tab'
+                    onClick={doSolution}
+                    disabled={isCalculating || !allow_solution}
+                >Ratkaisu</button>
                 <button className={`btn-tab ${showNumbers ? 'btn-tab--active' : ''}`} onClick={() => setShowNumbers(prev => !prev)}>%</button>
             </div>
-
             {/* each 13 rows */}
             {values.map((v, rowIndex) =>
                 <div
                     key={rowIndex}
-                    className={`match-row ${v.reduce((a, b) => a + b, 0) ? 'match-row--active' : ''}`}
+                    className={`match-row ${v.some(a => a.state) ? 'match-row--active' : ''}`}
                 >
                     <div className="match-number-badge">{rowIndex + 1}</div>
                     <div className="match-teams">{teams[rowIndex][0]} - {teams[rowIndex][1]}</div>
-                    <div className="selection-group">
-                        {/* input nums sum */}
+                    {/* input nums sum */}
+                    {sums[rowIndex] !== 100 && <span className='sum-error'>{sums[rowIndex]}</span>}
 
-                        {
-                            /*inputs.reduce((acc, item, i) => {
-                                acc.push(<InputBtn key={i} data={item} />);
-                                if ((i + 1) % 3 === 0) acc.push(<hr key={`hr-${i}`} />);
-                                return acc;
-                            }, [])*/}
+                    <div className="selection-group">
 
                         {/* buttons 1 X 2 */}
                         {[...'1X2'].map((char, colIndex) => (
@@ -178,7 +156,12 @@ function App() {
     const [output, setOutput] = useState(null);
     const [teams, setTeams] = useState(teamsDefault);
     const [isCalculating, setIsCalculating] = useState(false);
-    const [solutionRows, setSolutionRows] = useState(128);
+    const [solutionRows, setSolutionRows] = useState(() => {
+        return localStorage.getItem('solutionRows') || 128;
+    });
+    useEffect(() => {
+        localStorage.setItem('solutionRows', solutionRows);
+    }, [solutionRows]);
     // LOAD INPUT / RESULT / TEAMS FROM DB -------------------------------------
     useEffect(() => {
         fetch(`${API_ROUTE}input`)
@@ -212,7 +195,7 @@ function App() {
     // SAVE INPUTS -------------------------------------
     useEffect(() => {
         if (!isInputLoaded) return;
-
+        // console.log(prettify(inputs, 1));
         const timeoutId = setTimeout(async () => {
             try {
                 await fetch(`${API_ROUTE}input`, {
@@ -231,7 +214,7 @@ function App() {
         try {
 
 
-            const response = await fetch(`${API_ROUTE}calculate`, {
+            const response = await fetch(`${API_ROUTE}solution`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -249,25 +232,53 @@ function App() {
             }
 
         } catch (err) {
-            console.error("Ошибка сохранения:", err);
+            console.error("doSolution error:", err);
         } finally {
             setIsCalculating(false)
         }
     }
-    const handleClear = () => {
-
+    const handleClearButtons = () => {
+        setInputs(prev =>
+            prev.map(row =>
+                row.map((col) => ({ ...col, state: false }))
+            )
+        );
     }
-    const handleRandom = () => {
-
+    const handleRandomButtons = () => {
+        setInputs(prev =>
+            prev.map(row =>
+                row.map((col) => ({ ...col, state: Math.random() > 0.5 }))
+            )
+        );
     }
+
     const handleTeams = () => {
 
     }
-    const randomizeNumbers = () => {
+    const handleRandomNumbers = () => {
+        setInputs(prev =>
+            prev.map(row => {
+                let v = Array.from({ length: 3 }, () => Math.random());
+                const s = v.reduce((a, b) => a + b, 0);
+                // Считаем первые два числа
+                const val1 = Math.round((v[0] / s) * 100);
+                const val2 = Math.round((v[1] / s) * 100);
+                // Третье число — это остаток, чтобы в сумме было строго 100
+                const val3 = 100 - (val1 + val2);
 
+                const finalV = [val1, val2, val3];
+
+                return row.map((col, colIndex) => ({ ...col, value: finalV[colIndex] }));
+            }
+            )
+        );
     }
-    const resetNumbers = () => {
-
+    const handleDefaultNumbers = () => {
+        setInputs(prev =>
+            prev.map((row, rowIndex) =>
+                row.map((col, colIndex) => ({ ...col, value: numbersDefault[rowIndex][colIndex] }))
+            )
+        );
     }
 
     const onInputChange = (rowIndex, colIndex, newData) => {
@@ -281,12 +292,10 @@ function App() {
             ? <InputTable
                 values={inputs}
                 onChanged={onInputChange}
-                onCalculate={(data, rows) => doCalculate(0)}
                 isCalculating={isCalculating}
                 teams={teams}
                 solutionRows={solutionRows}
-                changeSolutionRows={setSolutionRows}
-
+                setSolutionRows={setSolutionRows}
                 doSolution={doSolution}
             />
             : 'Loading...'}
@@ -298,21 +307,18 @@ function App() {
                 paddingBottom: 0,
                 marginBottom: 0
             }}>
-                {/* <button className="btn-tab" onClick={handleRandom}></button> */}
-                {/* <button className="btn-tab" >Random</button> */}
-                {/* <button className="btn-tab" >Clear</button> */}
-                <button className="btn-tab" onClick={handleClear}>Tyhjennä valinta</button>
-                <button className="btn-tab" onClick={handleRandom}>Satunnainen valinta</button>
+                <button className="btn-tab" onClick={handleClearButtons}>Tyhjennä valinta</button>
+                <button className="btn-tab" onClick={handleRandomButtons}>Satunnainen valinta</button>
                 <button className="btn-tab" onClick={handleTeams}>Satunnaiset joukkueet</button>
-                <button className="btn-tab" onClick={randomizeNumbers}>Satunnaiset kertoimet</button>
-                <button className="btn-tab" onClick={resetNumbers}>Oletuskertoimet</button>
+                <button className="btn-tab" onClick={handleRandomNumbers}>Satunnaiset kertoimet</button>
+                <button className="btn-tab" onClick={handleDefaultNumbers}>Oletuskertoimet</button>
             </div>
         </div>
 
 
         {output && <OutputTable
             values={output}
-            onReset={doOutputClear}
+        //  onReset={doOutputClear}
         />}
     </>)
 }
