@@ -1,0 +1,41 @@
+.error-box {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    background-color: rgb(255, 220, 220);
+    border: 2px solid rgb(120, 0, 0);
+
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 10px;
+
+    width: 40px;
+    height: 40px;
+    z-index: 9999;
+}
+
+.error-box:hover {
+    width: 250px;
+    height: 250px;
+    border-radius: 3px;
+}
+
+.error-box:hover .error-icon {
+    opacity: 0;
+}
+
+.error-content {
+    opacity: 0;
+}
+
+.error-box:hover .error-content {
+    opacity: 1;
+}
+
+.error-icon {
+    /* position: absolute; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

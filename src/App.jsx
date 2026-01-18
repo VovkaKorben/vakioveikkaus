@@ -1,34 +1,56 @@
 import React, { useState, useEffect } from 'react'
 import InputBtn from './InputBtn.jsx'
 import './App.css'
+import './assets/css/errors.css'
 const API_ROUTE = 'http://localhost:3500/api/';
 import { teamsDefault, defaultInput, checkDefaults, getRandomInt, numbersDefault } from './utils.js';
 import { NumericFormat } from 'react-number-format';
 import { prettify } from './debug.js';
 
+const ErrorsShow = ({ errors }) => {
+    if (!errors.length) return null;
 
+    return (
+        <div className='error-box'>
+            <div className='error-icon'>!</div>
+            <div className='error-content'>
+                {errors.map((e, i) =>
+                    <div key={`${i}`} > {e}</div>
+                )}
+            </div >
+        </div >
 
-
-
-const OutputTable = ({ values, onReset }) => {
+    );
+};
+const OutputTable = ({ data, onReset }) => {
     const values_convert = '1X2';
     const colHeaders = Array.from({ length: 13 }, (_, i) => i + 1);
 
 
     return (
         <div className="results-section">
-            <div className="nav-tabs-container ">
+            {/* <div className="nav-tabs-container ">
+               <span>{data.rowCount} { data.rowCount!==data.requestedRows && `!!!`}   </span>
+                <button className="btn-tab" onClick={onReset}>Tyhjennä tulokset</button>
+            </div> */}
+            <div className="nav-tabs-container">
+                <div className="results-stats">
+                    <span>Rivit: {data.rowCount}</span>
+                    <span className="results-warning">
+                        {data.rowCount !== data.requestedRows && ` (Pyydetyt: ${data.requestedRows})`}
+                    </span>
+                </div>
                 <button className="btn-tab" onClick={onReset}>Tyhjennä tulokset</button>
             </div>
 
             <div className="results-list">
-                {values.map((row, rowIndex) => (
+                {data.values.map((row, rowIndex) => (
                     <React.Fragment key={`group-${rowIndex}`}>
                         {/* Вставляем заголовок каждые 10 строк */}
                         {rowIndex % 10 === 0 && (
                             <div className="results-group-header">
                                 <div className="header-label">
-                                    {rowIndex + 1}–{Math.min(rowIndex + 10, values.length)}
+                                    {rowIndex + 1}–{Math.min(rowIndex + 10, data.values.length)}
                                 </div>
                                 <div className="header-values">
                                     {colHeaders.map(num => (
@@ -55,17 +77,18 @@ const OutputTable = ({ values, onReset }) => {
         </div>
     );
 };
-
 const InputTable = ({
     values, // displayed data
     onChanged, // data changed (button toggle or num value)
-    doSolution, // go calculate
+    doOutput, // go calculate
     isCalculating,
 
     teams, // displayed data
 
-    solutionRows,
-    setSolutionRows,
+    outputRows,
+    setOutputRows,
+
+    doShuffle
 
 
 }) => {
@@ -85,14 +108,10 @@ const InputTable = ({
 
         <div className="card-wrapper">
             <div className="nav-tabs-container">
-                Rivimäärä
-
-
-
-                <NumericFormat
+                Rivimäärä<NumericFormat
                     className="input-tab"
-                    value={solutionRows}
-                    onValueChange={v => setSolutionRows(v.floatValue ?? 0)}
+                    value={outputRows}
+                    onValueChange={v => setOutputRows(v.floatValue ?? 0)}
 
                     decimalScale={0}            // Запрещает ввод десятичных знаков (только целые)
                     allowNegative={false}       // Запрещает ввод знака минус
@@ -107,13 +126,16 @@ const InputTable = ({
 
                 <button
                     className='btn-tab'
-                    onClick={doSolution}
+                    onClick={doOutput}
                     disabled={isCalculating || !allow_solution}
                 >Ratkaisu</button>
                 <button className={`btn-tab ${showNumbers ? 'btn-tab--active' : ''}`} onClick={() => setShowNumbers(prev => !prev)}>%</button>
+                <button className='btn-tab' onClick={doShuffle}>↺</button>
             </div>
             {/* each 13 rows */}
             {values.map((v, rowIndex) =>
+
+                // row "complete" sign
                 <div
                     key={rowIndex}
                     className={`match-row ${v.some(a => a.state) ? 'match-row--active' : ''}`}
@@ -122,13 +144,15 @@ const InputTable = ({
                     <div className="match-teams">{teams[rowIndex][0]} - {teams[rowIndex][1]}</div>
                     {/* input nums sum */}
                     {sums[rowIndex] !== 100 && <span className='sum-error'>{sums[rowIndex]}</span>}
-
+                    {/* {prettify(v, 0)} */}
                     <div className="selection-group">
 
                         {/* buttons 1 X 2 */}
                         {[...'1X2'].map((char, colIndex) => (
+
                             <InputBtn
                                 key={`r${rowIndex}_c${colIndex}`}
+
                                 inputVisible={showNumbers}
                                 caption={char}
                                 data={values[rowIndex][colIndex]}
@@ -156,29 +180,41 @@ function App() {
     const [output, setOutput] = useState(null);
     const [teams, setTeams] = useState(teamsDefault);
     const [isCalculating, setIsCalculating] = useState(false);
-    const [solutionRows, setSolutionRows] = useState(() => {
-        return localStorage.getItem('solutionRows') || 128;
+    const [outputRows, setOutputRows] = useState(() => {
+        return localStorage.getItem('outputRows') || 128;
     });
+    const [errors, setErrors] = useState([]);
+    const logError = (msg) => {
+        console.error(msg);
+        setErrors(prev => {
+            const messages = [...prev];
+            messages.unshift(msg);
+            return messages;
+        })
+    }
+
     useEffect(() => {
-        localStorage.setItem('solutionRows', solutionRows);
-    }, [solutionRows]);
+        localStorage.setItem('outputRows', outputRows);
+    }, [outputRows]);
     // LOAD INPUT / RESULT / TEAMS FROM DB -------------------------------------
     useEffect(() => {
+        // logError('[app init] fetch started');
         fetch(`${API_ROUTE}input`)
             .then(res => res.json())
             .then(data => {
+                // console.log("Raw data from DB:", prettify(data, 1))
                 const verified = checkDefaults(defaultInput, data);
                 setInputs(verified);
                 setIsInputLoaded(true);
             })
-            .catch(err => console.error("inputs load error:", err));
+            .catch(err => logError("inputs load error:", err));
 
         fetch(`${API_ROUTE}output`)
             .then(res => res.json())
             .then(data => {
                 setOutput(data);
             })
-            .catch(err => console.error("result load error:", err));
+            .catch(err => logError("result load error:", err));
 
         fetch(`${API_ROUTE}teams`)
             .then(res => res.json())
@@ -187,7 +223,7 @@ function App() {
                 setTeams(verified);
 
             })
-            .catch(err => console.error("teams load error:", err));
+            .catch(err => logError("teams load error:", err));
 
 
 
@@ -209,51 +245,67 @@ function App() {
     }, [inputs, isInputLoaded]);
 
 
-    const doSolution = async () => {
+    const doOutput = async () => {
         setIsCalculating(true)
         try {
 
 
-            const response = await fetch(`${API_ROUTE}solution`, {
+            const response = await fetch(`${API_ROUTE}output`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     inputs: inputs,
-                    rowCount: solutionRows
+                    rowCount: outputRows
                 })
             });
 
             const data = await response.json();
-
-            if (Array.isArray(data)) {
+            setOutput(data);
+            /*if (Array.isArray(data)) {
                 setOutput(data);
             } else {
                 setOutput(null);
-            }
+            }*/
 
         } catch (err) {
-            console.error("doSolution error:", err);
+            logError("doSolution error:", err);
         } finally {
             setIsCalculating(false)
         }
     }
+    const doOutputClear = async () => {
+        try {
+            await fetch(`${API_ROUTE}output`, { method: 'DELETE' });
+            setOutput(null);
+        } catch (err) {
+           logError("doOutputClear error:", err);
+        }
+    }
+
     const handleClearButtons = () => {
         setInputs(prev =>
             prev.map(row =>
-                row.map((col) => ({ ...col, state: false }))
+                row.map((col) => ({ ...col, state: 0 }))
             )
         );
     }
     const handleRandomButtons = () => {
         setInputs(prev =>
             prev.map(row =>
-                row.map((col) => ({ ...col, state: Math.random() > 0.5 }))
+                row.map((col) => ({ ...col, state: getRandomInt(0, 1) }))
             )
         );
     }
 
-    const handleTeams = () => {
-
+    const handleTeams = async () => {
+        try {
+            const response = await fetch(`${API_ROUTE}teamsupdate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            setTeams(data);
+        } catch (err) { logError("teams generate error:", err); }
     }
     const handleRandomNumbers = () => {
         setInputs(prev =>
@@ -280,23 +332,55 @@ function App() {
             )
         );
     }
+    const doShuffle = () => {
+        setInputs(prev => prev.map(row => {
+            // Проверяем: если ряд абсолютно пустой (все state === 0)
+            if (row.every(cell => cell.state !== 1)) {
+                const colIndex = getRandomInt(0, 2);
 
-    const onInputChange = (rowIndex, colIndex, newData) => {
-        setInputs(prev => prev.map((row, ri) => ri !== rowIndex ? row :
-            row.map((oldData, ci) => ci !== colIndex ? oldData : newData)
-        ))
+                // Возвращаем новый массив строки, где одна ячейка — это новый объект
+                return row.map((cell, idx) => { return { ...cell, state: idx === colIndex ? 2 : 0 } }
+                );
+            }
+
+            // Если в ряду уже есть выбор (ручной или робот), возвращаем его как есть
+            return row;
+        }));
+
+
+    }
+
+    const onInputChange = (rowIndex, colIndex) => {
+        //setInputs(prev => prev.map((row, ri) => ri !== rowIndex ? row :            row.map((oldData, ci) => ci !== colIndex ? oldData : newData)        ))
+        setInputs(prev => {
+            const newRows = [...prev];
+            const newRow = [...newRows[rowIndex]];
+            newRows[rowIndex] = newRow.map((cell, cellColumn) => {
+                const updCell = { ...cell };
+                // чекаем, есть ли "робот" в строке
+                if (updCell.state === 2)
+                    updCell.state = 0;
+                // тогглим выбраную колонку
+                if (cellColumn === colIndex)
+                    updCell.state = 1 - updCell.state;
+                return updCell;
+            });
+            return newRows;
+        });
     }
 
     return (<>
+
         {isInputLoaded
             ? <InputTable
                 values={inputs}
                 onChanged={onInputChange}
                 isCalculating={isCalculating}
                 teams={teams}
-                solutionRows={solutionRows}
-                setSolutionRows={setSolutionRows}
-                doSolution={doSolution}
+                outputRows={outputRows}
+                setOutputRows={setOutputRows}
+                doOutput={doOutput}
+                doShuffle={doShuffle}
             />
             : 'Loading...'}
 
@@ -317,9 +401,11 @@ function App() {
 
 
         {output && <OutputTable
-            values={output}
-        //  onReset={doOutputClear}
+            data={output}
+            onReset={doOutputClear}
         />}
+
+        <ErrorsShow errors={errors} />
     </>)
 }
 

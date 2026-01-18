@@ -22,7 +22,7 @@
     background: white;
 }
 
-/* Левая часть: Инпут */
+/* Левая часть: Инпут (Edit) */
 .input-group__input {
     flex: 4;
     width: 50%;
@@ -30,8 +30,10 @@
     outline: none;
     text-align: center;
     font-weight: 600;
+    /* Возвращаем белый фон, чтобы он не окрашивался родительским стейтом */
     background: white;
-    /* Убираем лишние радиусы у детей, пусть родитель клипает сам */
+    /* Фиксируем темный цвет текста, чтобы он не становился белым в стейте 1 */
+    color: #333;
     border-radius: 0;
 }
 
@@ -42,24 +44,16 @@
     border: none;
     outline: none;
     cursor: pointer;
-    background: var(--group-bg-off);
-    color: #666;
+    /* По умолчанию чуть притеняем, если стейт 0 */
+    background: rgba(0, 0, 0, 0.05);
+    color: inherit;
     font-size: 12px;
     font-weight: bold;
-    transition: background 0.2s, color 0.2s;
-    /* Убираем лишние радиусы у детей */
+    transition: all 0.2s;
     border-radius: 0;
 }
 
-/* СОСТОЯНИЕ: НАЖАТА (Active) */
-.input-group--active {
-    /* ЧИТ №2: Меняем цвет "рамки" через тень */
-    box-shadow: 0 0 0 1px var(--group-green);
-    /* ЧИТ №3: Подкрашиваем фон самого контейнера в тот же зеленый.
-       Теперь, если между кнопкой и рамкой будет щель в 0.001 пикселя, 
-       сквозь неё будет виден зеленый фон, а не белая "залысина". */
-    background: var(--group-green);
-}
+
 
 .input-group--active .input-group__btn {
     background: var(--group-green);
@@ -67,10 +61,7 @@
 }
 
 /* СОСТОЯНИЕ: СВЕЧЕНИЕ (Glow) */
-.input-group--glow {
-    /* Совмещаем рамку и свечение */
-    box-shadow: 0 0 0 1px var(--group-green), 0 0 10px var(--group-glow);
-}
+/* .input-group--glow {box-shadow: 0 0 0 1px var(--group-green), 0 0 10px var(--group-glow);} */
 
 /* Состояние, когда инпут скрыт */
 .input-group--hidden-input .input-group__input {
@@ -82,4 +73,31 @@
     width: 100%;
     /* Здесь тоже убираем радиус, родитель всё сделает сам */
     border-radius: 0;
+}
+
+
+/* Стейт 0: Дефолт */
+.btn-state-0 {
+    box-shadow: 0 0 0 1px var(--group-gray);
+    color: #555;
+}
+
+/* Стейт 1: Хозяин (Темно-зеленый) */
+.btn-state-1 {
+    box-shadow: 0 0 0 1px var(--group-green);
+    background-color: var(--group-green);
+    color: white;
+}
+
+/* Стейт 2: Робот (Ярко-зеленый) */
+.btn-state-2 {
+    box-shadow: 0 0 0 1px #00e676;
+    background-color: #00e676;
+    color: #000;
+}
+
+/* Эффект при наведении для активных кнопок */
+.btn-state-1:hover, .btn-state-2:hover {
+    filter: brightness(1.1);
+    cursor: pointer;
 }

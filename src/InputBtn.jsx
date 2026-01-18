@@ -33,14 +33,17 @@ const InputBtn = ({
     }
 
 
-
+    //  className={`btn-state-${v[colIndex].state}`}
+    // ${isOutlined ? "input-group--glow" : ""}
+    //${data.state ? "input-group--active" : ''}
     return (
         <div
             className={`
                 input-group 
-                ${data.state ? "input-group--active" : ''}
-                ${inputVisible ? "" : "input-group--hidden-input"} 
-                ${isOutlined ? "input-group--glow" : ""}
+                btn-state-${data.state}
+                
+                ${inputVisible ? "" : "input-group--hidden-input"}
+                
                 `}
         >
 

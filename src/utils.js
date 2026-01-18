@@ -41,7 +41,7 @@ export function getRandomInt(min, max) {
 }
 export const defaultInput = Array.from({ length: 13 }, () => (
     Array.from({ length: 3 }, () => (
-        { state: true, value: 0 }
+        { state: 0, value: 0 }
     ))
 ));
 

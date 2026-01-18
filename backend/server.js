@@ -35,10 +35,11 @@ mongoose
   .then(() => {
     console.log("Ⓜ️  MongoDB connection established");
 
-    app.listen(API_PORT, () => {
+    const server = app.listen(API_PORT, () => {
       console.log(`⚽ Vakioveikkaus API started on http://localhost:${API_PORT}`);
       console.log(`💖 Health check with http://localhost:${API_PORT}/api/health`);
     });
+    server.timeout = 12000;
   }).catch((err) => {
     console.error("⛔  MongoDB connection error", err.message);
     process.exit(1);
@@ -52,7 +53,7 @@ mongoose
 const InputSchema = new mongoose.Schema({
   values: {
     type: [[{
-      state: { type: Boolean, default: true },
+      state: { type: Number, default: 0 },
       value: { type: Number, default: 0 }
     }]],
     default: defaultInput
@@ -119,7 +120,7 @@ const calculate = (data) => {
     let nums_sum = 0;
     for (let c = 0; c <= 2; c++) {
       const x = data.inputs[r][c];
-      if (x.state === true) {
+      if (x.state !== 0) {
         nums_sum += x.value;
       }
     }
@@ -128,7 +129,7 @@ const calculate = (data) => {
     const t = [];
     for (let c = 0; c < 2; c++) {
       const x = data.inputs[r][c];
-      if (x.state === true) {
+      if (x.state !== 0) {
         acc += x.value / nums_sum;
       }
       t.push(acc);
@@ -141,7 +142,7 @@ const calculate = (data) => {
   const allRows = [];
   const max_rows = Math.min(
     data.rowCount,
-    data.inputs.map(row => row.reduce((s, a) => s + (+a.state), 0)).reduce((m, a) => m * a, 1)
+    data.inputs.map(row => row.reduce((s, a) => s + (a.state ? 1 : 0), 0)).reduce((m, a) => m * a, 1)
   );
   for (let rowIndex = 0; rowIndex < max_rows; rowIndex++) {
 
@@ -160,14 +161,8 @@ const calculate = (data) => {
   }
   return allRows;
 }
-app.post('/api/solution', asyncHandler(async (req, res) => {
+app.post('/api/output', asyncHandler(async (req, res) => {
   const data = req.body;
-  /*
-  if (Object.keys(data).length === 0) {
-    await ResultModel.deleteMany({});
-    return res.status(200).json({ message: "Таблица результатов успешно очищена" });
-  }
-    */
   const calculationResult = calculate(data);
   const updateData = {
     values: calculationResult,
@@ -177,7 +172,7 @@ app.post('/api/solution', asyncHandler(async (req, res) => {
   };
 
   // 3. Сохраняем единственный экземпляр (upsert)
- const savedDoc = await OutputModel.findOneAndUpdate(
+  const savedDoc = await OutputModel.findOneAndUpdate(
     {},
     updateData,
     { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -186,16 +181,16 @@ app.post('/api/solution', asyncHandler(async (req, res) => {
   res.status(200).json(savedDoc);
 
 }));
-// ------------------------------------------
+
 
 
 // OUTPUT load ---------------------------------------------------------------
 app.get('/api/output', asyncHandler(async (req, res) => {
   const lastResult = await OutputModel.findOne().sort({ createdAt: -1 });
-  res.status(200).json(lastResult ? lastResult.values : null);
+  res.status(200).json(lastResult ? lastResult : null);
 }));
 // OUTPUT delete ---------------------------------------------------------------
-app.delete('/api/solution', asyncHandler(async (req, res) => {
+app.delete('/api/output', asyncHandler(async (req, res) => {
   await OutputModel.deleteMany({});
   res.status(200).json({ message: "Таблица результатов успешно очищена" });
 }));
@@ -232,7 +227,6 @@ const populateMatchesData = async (matches) => {
     });
   });
 };
-// Получить текущие команды [cite: 5, 6]
 app.get('/api/teams', asyncHandler(async (req, res) => {
   let set = await CurrentTeams.findOne().lean();
 

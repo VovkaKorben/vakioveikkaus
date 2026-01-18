@@ -1,4 +1,10 @@
 /* Основные цвета и шрифты */
+*, body, html {
+  box-sizing: border-box;
+  padding: 0px;
+  margin: 0px;
+}
+
 :root {
   --main-green: #008246;
   --light-bg: #f4f4f4;
@@ -7,8 +13,8 @@
   --text-dark: #333333;
   --text-muted: #666666;
   --row-hover-bg: #fafffb;
-  scrollbar-gutter: stable both-edges;
-  box-sizing: border-box;
+  /* scrollbar-gutter: stable both-edges; */
+
 }
 
 body {
@@ -317,6 +323,29 @@ body {
   color: var(--text-dark);
 }
 
-.sum-error
-{color:rgba(255, 0, 0, 0.541);
+.sum-error {
+  color: rgba(255, 0, 0, 0.541);
+}
+
+
+
+/* Статистика в шапке результатов */
+.results-stats {
+  margin-right: auto;
+  /* Прижимает всё остальное в контейнере вправо */
+  font-size: 16px;
+  /* Чуть крупнее */
+  color: var(--text-muted);
+  /* Не ярко-черный */
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+}
+
+.results-warning {
+  color: #0000004d;
+  /* Приглушенный красный для привлечения внимания */
+  margin-left: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
