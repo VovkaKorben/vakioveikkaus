@@ -7,35 +7,26 @@ const InputBtn = ({
     data, // number in edit
     caption, // button text if edit hidden
     inputVisible, // show if input visible
-    isOutlined, // show glow for
     // events    
-    onChanged// numeric value changed or button toggled
+    onEditChanged,// numeric value changed or button toggled
+    onButtonToggle
 
 }) => {
 
-    const onEditChanged = (values) => {
+    const handleEditChanged = (values) => {
         const newData = {
             ...data,
             // Если поле пустое, floatValue будет undefined, поэтому ставим 0
             value: values.floatValue ?? 0
         };
-        if (onChanged)
-            onChanged(newData);
+        if (onEditChanged)
+            onEditChanged(newData);
     }
-    const onButtonToggle = () => {
-        const newData = {
-            ...data,
-            state: !data.state
-        };
-
-        if (onChanged)
-            onChanged(newData);
+    const handleButtonToggle = () => {
+        if (onButtonToggle)
+            onButtonToggle();
     }
 
-
-    //  className={`btn-state-${v[colIndex].state}`}
-    // ${isOutlined ? "input-group--glow" : ""}
-    //${data.state ? "input-group--active" : ''}
     return (
         <div
             className={`
@@ -51,7 +42,7 @@ const InputBtn = ({
                 className="input-group__input"
                 value={data.value}
                 // onChange={onEditChanged} 
-                onValueChange={onEditChanged}
+                onValueChange={handleEditChanged}
 
                 decimalScale={0}            // Запрещает ввод десятичных знаков (только целые)
                 allowNegative={false}       // Запрещает ввод знака минус
@@ -63,7 +54,7 @@ const InputBtn = ({
             />
             <button
                 className="input-group__btn"
-                onClick={onButtonToggle} >
+                onClick={handleButtonToggle} >
                 {!inputVisible && caption}
             </button>
 

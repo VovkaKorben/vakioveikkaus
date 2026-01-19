@@ -79,7 +79,8 @@ const OutputTable = ({ data, onReset }) => {
 };
 const InputTable = ({
     values, // displayed data
-    onChanged, // data changed (button toggle or num value)
+    onEditChanged, // data changed (num value)
+    onButtonToggle, // data changed (button toggle)
     doOutput, // go calculate
     isCalculating,
 
@@ -156,7 +157,9 @@ const InputTable = ({
                                 inputVisible={showNumbers}
                                 caption={char}
                                 data={values[rowIndex][colIndex]}
-                                onChanged={(data) => onChanged(rowIndex, colIndex, data)}
+
+                                onButtonToggle={() => onButtonToggle(rowIndex, colIndex)}
+                                onEditChanged={(data) => onEditChanged(rowIndex, colIndex, data)}
                             />
 
 
@@ -278,7 +281,7 @@ function App() {
             await fetch(`${API_ROUTE}output`, { method: 'DELETE' });
             setOutput(null);
         } catch (err) {
-           logError("doOutputClear error:", err);
+            logError("doOutputClear error:", err);
         }
     }
 
@@ -343,15 +346,35 @@ function App() {
                 );
             }
 
-            // Если в ряду уже есть выбор (ручной или робот), возвращаем его как есть
+            
             return row;
         }));
 
 
     }
 
-    const onInputChange = (rowIndex, colIndex) => {
+    /*  const onInputChange = (rowIndex, colIndex, newData) => {
+          //setInputs(prev => prev.map((row, ri) => ri !== rowIndex ? row :            row.map((oldData, ci) => ci !== colIndex ? oldData : newData)        ))
+          console.log(prettify(newData, 0));
+          setInputs(prev => {
+              const newRows = [...prev];
+              const newRow = [...newRows[rowIndex]];
+              newRows[rowIndex] = newRow.map((cell, cellColumn) => {
+                  const updCell = { ...cell };
+                  // чекаем, есть ли "робот" в строке
+                  if (updCell.state === 2)
+                      updCell.state = 0;
+                  // тогглим выбраную колонку
+                  if (cellColumn === colIndex)
+                      updCell.state = 1 - updCell.state;
+                  return updCell;
+              });
+              return newRows;
+          });
+      }*/
+    const onButtonToggle = (rowIndex, colIndex, newData) => {
         //setInputs(prev => prev.map((row, ri) => ri !== rowIndex ? row :            row.map((oldData, ci) => ci !== colIndex ? oldData : newData)        ))
+        console.log(prettify(newData, 0));
         setInputs(prev => {
             const newRows = [...prev];
             const newRow = [...newRows[rowIndex]];
@@ -368,13 +391,26 @@ function App() {
             return newRows;
         });
     }
+    const onEditChanged = (rowIndex, colIndex, newData) => {
+        setInputs(prev => {
+            const newRows = [...prev];
+            const newRow = [...newRows[rowIndex]];
+            newRow[colIndex] = newData;
+            newRows[rowIndex] = newRow;
+            return newRows;
+        });
+    }
+
 
     return (<>
 
         {isInputLoaded
             ? <InputTable
                 values={inputs}
-                onChanged={onInputChange}
+
+                onEditChanged={onEditChanged}
+                onButtonToggle={onButtonToggle}
+
                 isCalculating={isCalculating}
                 teams={teams}
                 outputRows={outputRows}
