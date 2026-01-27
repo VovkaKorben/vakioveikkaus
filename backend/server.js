@@ -4,8 +4,8 @@ import express from 'express';
 import mongoose from "mongoose";
 import cors from 'cors';
 import { asyncHandler, notFound, errorHandler } from './middleware/error.js';
-import { defaultInput } from '../src/utils.js';
-import { prettify } from '../src/debug.js';
+import { defaultInput } from '../shared/utils.js';
+// import { prettify } from '@shared/myFile';
 dotenv.config({ quiet: true });
 
 

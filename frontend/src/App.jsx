@@ -5,7 +5,7 @@ import './assets/css/errors.css'
 const API_ROUTE = 'http://localhost:3500/api/';
 import { teamsDefault, defaultInput, checkDefaults, getRandomInt, numbersDefault } from './utils.js';
 import { NumericFormat } from 'react-number-format';
-import { prettify } from './debug.js';
+
 
 const ErrorsShow = ({ errors }) => {
     if (!errors.length) return null;
