@@ -44,7 +44,7 @@
         "run",
         "dev"
       ],
-      "cwd": "${workspaceFolder}",
+       "cwd": "${workspaceFolder}/frontend",
       "console": "integratedTerminal",
       "preLaunchTask": "clearConsole"
     },

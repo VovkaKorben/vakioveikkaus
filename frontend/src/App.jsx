@@ -372,9 +372,9 @@ function App() {
               return newRows;
           });
       }*/
-    const onButtonToggle = (rowIndex, colIndex, newData) => {
+    const onButtonToggle = (rowIndex, colIndex) => {
         //setInputs(prev => prev.map((row, ri) => ri !== rowIndex ? row :            row.map((oldData, ci) => ci !== colIndex ? oldData : newData)        ))
-        console.log(prettify(newData, 0));
+        // console.log(prettify(newData, 0));
         setInputs(prev => {
             const newRows = [...prev];
             const newRow = [...newRows[rowIndex]];
