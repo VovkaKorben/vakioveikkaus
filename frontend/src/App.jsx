@@ -3,7 +3,7 @@ import InputBtn from './InputBtn.jsx'
 import './App.css'
 import './assets/css/errors.css'
 const API_ROUTE = 'http://localhost:3500/api/';
-import { teamsDefault, defaultInput, checkDefaults, getRandomInt, numbersDefault } from './utils.js';
+import { teamsDefault, defaultInput, checkDefaults, getRandomInt, numbersDefault } from '@shared/utils.js';
 import { NumericFormat } from 'react-number-format';
 
 
@@ -187,13 +187,9 @@ function App() {
         return localStorage.getItem('outputRows') || 128;
     });
     const [errors, setErrors] = useState([]);
-    const logError = (msg) => {
-        console.error(msg);
-        setErrors(prev => {
-            const messages = [...prev];
-            messages.unshift(msg);
-            return messages;
-        })
+    const logError = (msg, err) => { // Добавь второй аргумент
+        console.error(msg, err);    // Выводи и текст, и саму ошибку
+        setErrors(prev => [msg, ...prev]);
     }
 
     useEffect(() => {
@@ -346,7 +342,7 @@ function App() {
                 );
             }
 
-            
+
             return row;
         }));
 

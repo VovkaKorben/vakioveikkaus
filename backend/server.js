@@ -144,11 +144,23 @@ const calculate = (data) => {
     data.rowCount,
     data.inputs.map(row => row.reduce((s, a) => s + (a.state ? 1 : 0), 0)).reduce((m, a) => m * a, 1)
   );
+  console.log(` requested: ${data.rowCount}, max rows: ${max_rows}`);
   for (let rowIndex = 0; rowIndex < max_rows; rowIndex++) {
+    let attempts = 0; // Счётчик попыток
 
     // create row
     let newRow;
     do {
+
+
+      attempts++;
+      if (attempts > 10000) { // Если не нашли уникальную строку за 10к попыток - стоп
+        console.error("🔥 Зацикливание на строке", rowIndex);
+        return allRows;
+      }
+
+
+
       newRow = [];
       probabilities.forEach((w) => {
         const dice = Math.random();
@@ -157,8 +169,14 @@ const calculate = (data) => {
       })
 
     } while (!rowIsUnique(newRow, allRows));
+
+
+
     allRows.push(newRow);
   }
+
+  console.log("✅ Расчет окончен, создано:", allRows.length); // ЛОГ 2
+
   return allRows;
 }
 app.post('/api/output', asyncHandler(async (req, res) => {

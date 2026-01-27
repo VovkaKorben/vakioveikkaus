@@ -1,16 +1,62 @@
-# React + Vite
+# Project Documentation: Vakioveikkaus Full Stack App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## PART 1: Design & Wireframe (OSA 1)
 
-Currently, two official plugins are available:
+### 1.1 Interface Overview (Rautalankamalli)
+The application UI is split into two functional views to fulfill the core requirements:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+* **Generation View (Päänäkymä):**
+    * **Header**: "Vakioveikkaus".
+    * **Input Grid**: 13 rows representing matches, each with three probability weight fields (1, X, 2).
+    * **Row Selection**: Numeric input for selecting the number of rows to generate (1–5000).
+    * **Controls**: "Generate & Save" (Ratkaisu) and "Shuffle" buttons.
+    * **Results Area**: A dynamic list showing generated rows with headers repeated every 10 lines for readability.
 
-## React Compiler
+* **History View:**
+    * Displays a list of all previously saved generations from the database.
+    * Includes timestamps and total row counts for each record.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**[PLACEHOLDER: Insert Application Screenshots Here]**
 
-## Expanding the ESLint configuration
+### 1.2 User Flow
+1.  **Entry**: User navigates to the main generation screen.
+2.  **Input**: User sets weights for 13 matches (e.g., 70% for '1', 20% for 'X', 10% for '2').
+3.  **Generation**: User chooses row count and clicks "Generate".
+4.  **Storage**: Backend calculates unique rows, saves the set to MongoDB Atlas, and returns the data.
+5.  **Review**: User views generated rows on-screen or browses history.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1.3 Data Design (Datan suunnittelu)
+* **Frontend → Backend**: Transmits match weights and requested row count via JSON.
+* **Backend → Frontend**: Returns an object containing the generated rows, row count, and requested count.
+* **Database Schema**:
+    * `InputModel`: Stores the current state of match weights.
+    * `OutputModel`: Stores generated row sets with timestamps.
+
+---
+
+## PART 2: Technical Setup (README)
+
+### Tech Stack
+* **Frontend**: React 19 (Vite).
+* **Backend**: Node.js + Express.
+* **Database**: MongoDB Atlas.
+
+### Installation
+1.  **Check Environment**:
+    ```bash
+    node -v # Expected >= 18.x
+    npm -v
+    ```
+2.  **Configure Database**:
+    Create `backend/.env` with your connection string:
+    `MONGODB_URI=your_atlas_uri`
+    `API_PORT=3500`
+
+3.  **Install & Run**:
+    ```bash
+    # Backend
+    cd backend && npm install && node server.js
+
+    # Frontend
+    cd frontend && npm install && npm run dev
+    ```
